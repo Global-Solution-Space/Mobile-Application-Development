@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Header } from '../../components/Header'; // <-- Importar o Header
+import { Header } from '../../components/Header'; 
 
 export function LotesScreen() {
     return (
         <View style={styles.container}>
-            <Header title="Lotes" /> {/* <-- Adicionar o Header com o título da página */}
+            <Header title="Lotes" /> 
             
             <View style={styles.content}>
                 <Text style={styles.title}>Monitoramento de Lotes</Text>
@@ -15,7 +15,7 @@ export function LotesScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#04100B' }, // Fundo verde escuro preenche tudo
+    container: { flex: 1, backgroundColor: '#04100B' }, 
     content: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     title: { color: '#10B981', fontSize: 20, fontWeight: 'bold' }
 });

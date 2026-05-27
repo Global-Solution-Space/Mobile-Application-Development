@@ -2,7 +2,6 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { FontAwesome5 } from '@expo/vector-icons';
 
-// Importamos as telas aqui para dentro das abas
 import { HomeScreen } from '../screens/Home/HomeScreen';
 import { LotesScreen } from '../screens/Lotes/LotesScreen';
 import { CadastroScreen } from '../screens/Cadastro/CadastroScreen';
@@ -16,16 +15,15 @@ export function TabRoutes() {
     <Tab.Navigator
         screenOptions={{
             headerShown: false,
-            tabBarShowLabel: false, // <-- A mágica que esconde os textos
+            tabBarShowLabel: false, 
             tabBarStyle: {
-                backgroundColor: '#0A1F16', // Verde escuro Sidonia
+                backgroundColor: '#0A1F16', 
                 borderTopWidth: 1,
                 borderTopColor: '#11422B',
-                height: 60, // Altura reduzida para ficar elegante
-                // O React Navigation já centraliza os ícones automaticamente quando tiramos o texto!
+                height: 60, 
             },
-            tabBarActiveTintColor: '#10B981', // Verde neon quando ativo
-            tabBarInactiveTintColor: '#64748B', // Cinza apagado quando inativo
+            tabBarActiveTintColor: '#10B981', 
+            tabBarInactiveTintColor: '#64748B',
         }}
     >
         <Tab.Screen 

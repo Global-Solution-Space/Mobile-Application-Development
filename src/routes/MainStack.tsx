@@ -1,7 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// Importamos o componente de abas que acabamos de separar
 import { TabRoutes } from './TabRoutes'; 
 
 const Stack = createNativeStackNavigator();

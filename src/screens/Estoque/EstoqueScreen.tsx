@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Header } from '../../components/Header'; // <-- Import adicionado
+import { Header } from '../../components/Header'; 
 
 export function EstoqueScreen() {
     return (
         <View style={styles.container}>
-            <Header title="Estoque" /> {/* <-- Header adicionado no topo */}
+            <Header title="Estoque" /> 
             
             <View style={styles.content}>
                 <Text style={styles.title}>Estoque de Insumos</Text>

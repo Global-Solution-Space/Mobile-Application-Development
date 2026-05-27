@@ -4,12 +4,14 @@ import { FontAwesome5 } from '@expo/vector-icons';
 
 export type HeaderProps = { title?: string; };
 
+const APP_NAME = "Terra Nova";
+
 export function Header({ title }: HeaderProps) {
     return (
         <View style={styles.container}>
             <View style={styles.brandContainer}>
                 <FontAwesome5 name="seedling" size={20} color="#10B981" />
-                <Text style={styles.brandText}>SIDONIA</Text>
+                <Text style={styles.brandText}>{APP_NAME}</Text>
             </View>
             <Text style={styles.pageTitle}>{title}</Text>
         </View>
@@ -22,12 +24,11 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "space-between",
         paddingHorizontal: 20,
-        // O paddingTop dinâmico evita que o header fique escondido atrás do relógio/bateria do celular
         paddingTop: Platform.OS === 'android' ? 40 : 20, 
         paddingBottom: 18,
-        backgroundColor: "#0A1F16", // Verde floresta bem escuro
+        backgroundColor: "#0A1F16",
         borderBottomWidth: 1,
-        borderBottomColor: "#11422B", // Linha verde sutil para separar do resto da tela
+        borderBottomColor: "#11422B",
         elevation: 6,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
@@ -41,9 +42,9 @@ const styles = StyleSheet.create({
     },
     brandText: {
         fontSize: 18,
-        color: "#F8FAFC", // Branco gelo para dar contraste
+        color: "#F8FAFC", 
         fontWeight: "bold",
-        letterSpacing: 1.5 // Deixa o texto com um ar mais tecnológico
+        letterSpacing: 1.5 
     },
     pageTitle: {
         fontSize: 15,
