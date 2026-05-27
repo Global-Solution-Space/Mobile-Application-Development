@@ -157,7 +157,7 @@ src/
 3.  **Fase 3: A Engine (Math & Zustand):**
     *   Programar `engine.ts` com as fórmulas de Risco, Degradação e Score.
     *   Configurar `missionStore.ts` com a nave modular e eventos.
-4.  **Fase 4: Mission Setup e Hangar:**
-    *   Construir a tela de Setup com recalculo visual em tempo real do Score.
+4.  **Fase 4: Mission Setup e Mission Report:**
+    *   Construir a tela de Setup com recalculo visual e a tela de Report com o Score da Missão.
 5.  **Fase 5: Mission Control HUD e Engineering Bay:**
     *   Construir o layout denso da tela de telemetria com radar e a tela de diagnóstico da nave (CRUD de Módulos).
