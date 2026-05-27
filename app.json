@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "sidonia",
+    "slug": "sidonia",
+    "version": "1.0.0",
+    "android": {
+      "package": "com.anonymous.sidonia"
+    }
+  }
+}

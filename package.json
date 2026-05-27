@@ -1,0 +1,32 @@
+{
+  "name": "sidonia",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
+    "@react-navigation/native": "^7.2.5",
+    "@react-navigation/native-stack": "^7.16.0",
+    "expo": "~55.0.7",
+    "expo-status-bar": "~55.0.6",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-native": "0.83.6",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.23.0",
+    "react-native-web": "^0.21.0"
+  },
+  "private": true,
+  "devDependencies": {
+    "@react-native-community/cli": "^20.1.3",
+    "@react-native/metro-config": "^0.85.3",
+    "@types/react": "^19.2.15",
+    "expo-module-scripts": "^56.0.2",
+    "typescript": "~5.9.2"
+  }
+}
