@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════════════
-// Terra Nova — Estoque de Insumos (CRUD Secundário)
-// Cadastrar, listar, editar e excluir adubos/sementes/nutrientes
+// Terra Nova — Controle de Estoque de Insumos
+// Com validações de UX aprimoradas (Mensagens Específicas)
 // ═══════════════════════════════════════════════════════════════
 
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Alert, Modal, TextInput, ScrollView, KeyboardAvoidingView, Platform
+  TextInput, ScrollView, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
@@ -14,337 +14,259 @@ import { EmptyState } from '../../components/EmptyState';
 import { SelectChip } from '../../components/SelectChip';
 import { Colors } from '../../theme/colors';
 import { useAppStore } from '../../store/useAppStore';
-import { Insumo, CategoriaInsumo } from '../../types';
 
-const CATEGORIAS: CategoriaInsumo[] = ['Semente', 'Adubo', 'Nutriente', 'Fertilizante', 'Pesticida', 'Substrato'];
-const catIcon: Record<CategoriaInsumo, string> = {
-  Semente: 'seedling', Adubo: 'fill-drip', Nutriente: 'flask',
-  Fertilizante: 'leaf', Pesticida: 'shield-alt', Substrato: 'layer-group',
+const TIPOS_INSUMO = ['Semente', 'Fertilizante', 'Nutriente', 'Defensivo'];
+const UNIDADES = ['kg', 'L', 'pct', 'un'];
+
+const iconeTipo: Record<string, string> = {
+  Semente: 'seedling', Fertilizante: 'flask', Nutriente: 'leaf', Defensivo: 'shield-alt'
 };
 
 export function EstoqueScreen() {
-  const { insumos, addInsumo, updateInsumo, deleteInsumo } = useAppStore();
+  const { insumos, addInsumo, updateInsumo, deleteInsumo } = useAppStore() as any;
 
-  const [modal, setModal] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [nome, setNome] = useState('');
-  const [categoria, setCategoria] = useState<CategoriaInsumo>('Semente');
-  const [quantidade, setQuantidade] = useState('');
-  const [unidade, setUnidade] = useState('');
-  const [minimo, setMinimo] = useState('');
 
-  const openCreate = () => {
-    setEditId(null);
-    setNome('');
-    setCategoria('Semente');
-    setQuantidade('');
-    setUnidade('');
-    setMinimo('');
-    setModal(true);
+  // Estados do Formulário
+  const [nome, setNome] = useState('');
+  const [tipo, setTipo] = useState('Fertilizante');
+  const [quantidade, setQuantidade] = useState('');
+  const [unidade, setUnidade] = useState('kg');
+  const [qtdMinima, setQtdMinima] = useState('');
+  const [erro, setErro] = useState('');
+
+  const totalItens = insumos.length;
+  const itensAbaixoMinimo = insumos.filter((i: any) => i.quantidade <= i.quantidadeMinima).length;
+
+  const openAddForm = () => {
+    setEditId(null); setNome(''); setTipo('Fertilizante');
+    setQuantidade(''); setUnidade('kg'); setQtdMinima(''); setErro('');
+    setShowForm(true);
   };
 
-  const openEdit = (item: Insumo) => {
-    setEditId(item.id);
-    setNome(item.nome);
-    setCategoria(item.categoria);
-    setQuantidade(item.quantidade.toString());
-    setUnidade(item.unidade);
-    setMinimo(item.minimo.toString());
-    setModal(true);
+  const openEditForm = (item: any) => {
+    setEditId(item.id); setNome(item.nome); setTipo(item.tipo);
+    setQuantidade(item.quantidade.toString()); setUnidade(item.unidade);
+    setQtdMinima(item.quantidadeMinima.toString()); setErro('');
+    setShowForm(true);
   };
 
   const handleSave = () => {
+    setErro(''); // Limpa o erro antes de testar
+    
+    // ── VALIDAÇÕES DE UX MELHORADAS ──
+    if (!nome) { 
+      setErro('Por favor, informe o nome do insumo.'); 
+      return; 
+    }
+    
+    if (quantidade === '') {
+      setErro('O campo "Quantidade" não pode ficar vazio.');
+      return;
+    }
     const qtdNum = Number(quantidade);
-    const minNum = Number(minimo);
-
-    if (!nome.trim() || !quantidade || !unidade.trim() || isNaN(qtdNum) || isNaN(minNum)) {
-      Alert.alert('Campos obrigatórios', 'Preencha os campos com valores válidos.');
+    if (isNaN(qtdNum)) {
+      setErro('Atenção: A "Quantidade" deve conter apenas números.');
       return;
     }
 
-    const data = {
-      nome: nome.trim(),
-      categoria,
-      quantidade: qtdNum || 0,
-      unidade: unidade.trim(),
-      minimo: minNum || 0,
-    };
+    if (qtdMinima === '') {
+      setErro('O campo "Alerta de Estoque Baixo" não pode ficar vazio.');
+      return;
+    }
+    const minNum = Number(qtdMinima);
+    if (isNaN(minNum)) {
+      setErro('Atenção: O "Alerta de Estoque Baixo" deve conter apenas números.');
+      return;
+    }
+
+    // Se passou por tudo, salva no sistema!
+    const payload = { nome, tipo, quantidade: qtdNum, unidade, quantidadeMinima: minNum };
 
     if (editId) {
-      updateInsumo(editId, data);
+      updateInsumo(editId, payload);
     } else {
-      addInsumo(data);
+      addInsumo(payload);
     }
-    setModal(false);
+    setShowForm(false);
   };
 
-  const confirmDelete = (item: Insumo) => {
-    Alert.alert(
-      'Excluir Insumo',
-      `Deseja remover "${item.nome}" do estoque?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Excluir', style: 'destructive', onPress: () => deleteInsumo(item.id) },
-      ]
-    );
-  };
-
-  const renderItem = ({ item }: { item: Insumo }) => {
-    const isLow = item.quantidade < item.minimo;
+  if (showForm) {
     return (
-      <View style={[styles.card, isLow && styles.cardLow]}>
-        <View style={styles.cardHeader}>
-          <View style={styles.cardLeft}>
-            <View style={[styles.iconCircle, isLow && { backgroundColor: Colors.warningBg }]}>
-              <FontAwesome5 name={catIcon[item.categoria]} size={16}
-                color={isLow ? Colors.warning : Colors.accent} />
-            </View>
-            <View>
-              <Text style={styles.cardName}>{item.nome}</Text>
-              <Text style={styles.cardCat}>{item.categoria}</Text>
-            </View>
-          </View>
-          {isLow && (
-            <View style={styles.lowBadge}>
-              <FontAwesome5 name="exclamation-triangle" size={10} color={Colors.warning} />
-              <Text style={styles.lowText}>Baixo</Text>
-            </View>
-          )}
-        </View>
+      <View style={styles.container}>
+        <Header title={editId ? "Editar Insumo" : "Novo Insumo"} />
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView style={styles.formContainer}>
+            
+            <Text style={styles.label}>Nome do Produto *</Text>
+            <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Ex: Adubo NPK 10-10-10" placeholderTextColor={Colors.textMuted} />
 
-        <View style={styles.qtyRow}>
-          <View style={styles.qtyItem}>
-            <Text style={styles.qtyLabel}>Disponível</Text>
-            <Text style={[styles.qtyValue, isLow && { color: Colors.warning }]}>
-              {item.quantidade} {item.unidade}
-            </Text>
-          </View>
-          <View style={styles.qtyItem}>
-            <Text style={styles.qtyLabel}>Mínimo</Text>
-            <Text style={styles.qtyMinValue}>{item.minimo} {item.unidade}</Text>
-          </View>
-        </View>
+            <Text style={styles.label}>Tipo de Insumo *</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+              {TIPOS_INSUMO.map(t => (
+                <SelectChip key={t} label={t} isActive={tipo === t} onPress={() => setTipo(t)} />
+              ))}
+            </ScrollView>
 
-        {/* Barra de nível */}
-        <View style={styles.barTrack}>
-          <View style={[styles.barFill, {
-            width: `${Math.min((item.quantidade / Math.max(item.minimo * 3, 1)) * 100, 100)}%`,
-            backgroundColor: isLow ? Colors.warning : Colors.accent,
-          }]} />
-        </View>
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Quantidade *</Text>
+                <TextInput style={styles.input} value={quantidade} onChangeText={setQuantidade} keyboardType="numeric" placeholder="Ex: 50" placeholderTextColor={Colors.textMuted} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Unidade *</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 5 }}>
+                  {UNIDADES.map(u => (
+                    <TouchableOpacity key={u} style={[styles.miniChip, unidade === u && styles.miniChipActive]} onPress={() => setUnidade(u)}>
+                      <Text style={[styles.miniChipText, unidade === u && styles.miniChipTextActive]}>{u}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
 
-        <View style={styles.cardActions}>
-          <TouchableOpacity style={styles.editBtn} onPress={() => openEdit(item)} activeOpacity={0.7}>
-            <FontAwesome5 name="edit" size={12} color={Colors.info} />
-            <Text style={styles.editBtnText}>Editar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.deleteBtn} onPress={() => confirmDelete(item)} activeOpacity={0.7}>
-            <FontAwesome5 name="trash" size={12} color={Colors.danger} />
-            <Text style={styles.deleteBtnText}>Excluir</Text>
-          </TouchableOpacity>
-        </View>
+            <Text style={styles.label}>Alerta de Estoque Baixo (Mínimo) *</Text>
+            <TextInput style={styles.input} value={qtdMinima} onChangeText={setQtdMinima} keyboardType="numeric" placeholder="Avisar quando chegar em..." placeholderTextColor={Colors.textMuted} />
+
+            {erro !== '' && (
+              <View style={styles.errorBox}>
+                <FontAwesome5 name="exclamation-triangle" size={14} color={Colors.danger} />
+                <Text style={styles.errorText}>{erro}</Text>
+              </View>
+            )}
+
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowForm(false)}>
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+                <FontAwesome5 name="save" size={14} color={Colors.bgPrimary} />
+                <Text style={styles.saveBtnText}>Salvar Insumo</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
       </View>
     );
-  };
+  }
 
   return (
     <View style={styles.container}>
       <Header title="Estoque" />
-
-      {/* ── Resumo ─── */}
-      <View style={styles.summary}>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryValue}>{insumos.length}</Text>
-          <Text style={styles.summaryLabel}>Itens</Text>
+      
+      <View style={styles.statsBar}>
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{totalItens}</Text>
+            <Text style={styles.statLabel}>Itens</Text>
+          </View>
+          <View style={[styles.statItem, { borderLeftWidth: 1, borderLeftColor: Colors.border, paddingLeft: 16 }]}>
+            <Text style={[styles.statNumber, { color: itensAbaixoMinimo > 0 ? Colors.warning : Colors.success }]}>
+              {itensAbaixoMinimo}
+            </Text>
+            <Text style={styles.statLabel}>Abaixo do mín.</Text>
+          </View>
         </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={[styles.summaryValue, { color: Colors.warning }]}>
-            {insumos.filter(i => i.quantidade < i.minimo).length}
-          </Text>
-          <Text style={styles.summaryLabel}>Abaixo do mín.</Text>
-        </View>
-        <TouchableOpacity style={styles.addFloating} onPress={openCreate} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.addBtn} onPress={openAddForm}>
           <FontAwesome5 name="plus" size={16} color={Colors.bgPrimary} />
         </TouchableOpacity>
       </View>
 
       <FlatList
         data={insumos}
-        keyExtractor={item => item.id}
-        renderItem={renderItem}
+        keyExtractor={(item: any) => item.id}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <EmptyState
-            icon="boxes"
-            title="Estoque vazio"
-            subtitle="Cadastre insumos tocando no botão +"
-          />
-        }
-      />
+        ListEmptyComponent={<EmptyState icon="boxes" title="Estoque vazio" subtitle="Cadastre insumos tocando no botão +" />}
+        renderItem={({ item }: any) => {
+          const isCritico = item.quantidade <= item.quantidadeMinima;
 
-      {/* ── Modal Create/Edit ─── */}
-      <Modal visible={modal} animationType="slide" transparent>
-        <KeyboardAvoidingView 
-          style={styles.modalOverlay} 
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <ScrollView contentContainerStyle={styles.modalScroll}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>
-                  {editId ? 'Editar Insumo' : 'Novo Insumo'}
-                </Text>
-                <TouchableOpacity onPress={() => setModal(false)}>
-                  <FontAwesome5 name="times" size={20} color={Colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.modalLabel}>Nome *</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={nome}
-                onChangeText={setNome}
-                placeholder="Ex: Semente de Tomate"
-                placeholderTextColor={Colors.textMuted}
-              />
-
-              <Text style={styles.modalLabel}>Categoria</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {CATEGORIAS.map(c => (
-                  <SelectChip
-                    key={c}
-                    label={c}
-                    isActive={categoria === c}
-                    onPress={() => setCategoria(c)}
-                  />
-                ))}
-              </ScrollView>
-
-              <View style={styles.rowInputs}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.modalLabel}>Quantidade *</Text>
-                  <TextInput
-                    style={styles.modalInput}
-                    value={quantidade}
-                    onChangeText={setQuantidade}
-                    keyboardType="numeric"
-                    placeholder="0"
-                    placeholderTextColor={Colors.textMuted}
-                  />
+          return (
+            <View style={[styles.card, isCritico && styles.cardCritico]}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardIconBox}>
+                  <FontAwesome5 name={iconeTipo[item.tipo] || 'box'} size={16} color={Colors.accent} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.modalLabel}>Unidade *</Text>
-                  <TextInput
-                    style={styles.modalInput}
-                    value={unidade}
-                    onChangeText={setUnidade}
-                    placeholder="kg, L, un"
-                    placeholderTextColor={Colors.textMuted}
-                  />
+                  <Text style={styles.cardTitle}>{item.nome}</Text>
+                  <Text style={styles.cardType}>{item.tipo}</Text>
+                </View>
+                <View style={styles.actions}>
+                  <TouchableOpacity onPress={() => openEditForm(item)} style={styles.iconBtn}>
+                    <FontAwesome5 name="edit" size={14} color={Colors.info} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => deleteInsumo(item.id)} style={styles.iconBtn}>
+                    <FontAwesome5 name="trash" size={14} color={Colors.danger} />
+                  </TouchableOpacity>
                 </View>
               </View>
-
-              <Text style={styles.modalLabel}>Mínimo Aceitável</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={minimo}
-                onChangeText={setMinimo}
-                keyboardType="numeric"
-                placeholder="Quantidade mínima de alerta"
-                placeholderTextColor={Colors.textMuted}
-              />
-
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.8}>
-                <FontAwesome5 name="save" size={14} color={Colors.bgPrimary} />
-                <Text style={styles.saveBtnText}>
-                  {editId ? 'Salvar Alterações' : 'Cadastrar Insumo'}
-                </Text>
-              </TouchableOpacity>
+              
+              <View style={styles.cardFooter}>
+                <View>
+                  <Text style={styles.qtdLabel}>Em Estoque</Text>
+                  <Text style={[styles.qtdValue, isCritico && { color: Colors.danger }]}>
+                    {item.quantidade} <Text style={{ fontSize: 14 }}>{item.unidade}</Text>
+                  </Text>
+                </View>
+                {isCritico && (
+                  <View style={styles.alertaBadge}>
+                    <FontAwesome5 name="exclamation-circle" size={12} color={Colors.danger} />
+                    <Text style={styles.alertaText}>Estoque Baixo</Text>
+                  </View>
+                )}
+              </View>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </Modal>
+          );
+        }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bgPrimary },
+  
+  statsBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: Colors.bgSecondary, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  statsRow: { flexDirection: 'row', gap: 16 },
+  statItem: { alignItems: 'center' },
+  statNumber: { fontSize: 20, fontWeight: '700', color: Colors.accent },
+  statLabel: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+  addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.accent, alignItems: 'center', justifyContent: 'center' },
+  
   list: { padding: 16, paddingBottom: 100 },
 
-  // Resumo
-  summary: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  summaryItem: { alignItems: 'center' },
-  summaryValue: { fontSize: 20, fontWeight: 'bold', color: Colors.accent },
-  summaryLabel: { fontSize: 11, color: Colors.textMuted },
-  summaryDivider: { width: 1, height: 30, backgroundColor: Colors.border, marginHorizontal: 20 },
-  addFloating: {
-    marginLeft: 'auto',
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: Colors.accent,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  card: { backgroundColor: Colors.bgSecondary, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: Colors.border, marginBottom: 12 },
+  cardCritico: { borderColor: Colors.danger, backgroundColor: Colors.dangerBg },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  cardIconBox: { width: 40, height: 40, borderRadius: 10, backgroundColor: Colors.bgTertiary, alignItems: 'center', justifyContent: 'center' },
+  cardTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  cardType: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  actions: { flexDirection: 'row', gap: 6 },
+  iconBtn: { padding: 8, backgroundColor: Colors.bgPrimary, borderRadius: 8, borderWidth: 1, borderColor: Colors.border },
+  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 12 },
+  qtdLabel: { fontSize: 11, color: Colors.textMuted, marginBottom: 2 },
+  qtdValue: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary },
+  alertaBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(239, 68, 68, 0.15)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  alertaText: { fontSize: 11, color: Colors.danger, fontWeight: '700' },
 
-  // Card
-  card: {
-    backgroundColor: Colors.bgSecondary, borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: 12,
-  },
-  cardLow: { borderColor: Colors.warning + '66' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  cardLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  iconCircle: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: Colors.accentGlow,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  cardName: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
-  cardCat: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
-  lowBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: Colors.warningBg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6,
-  },
-  lowText: { fontSize: 10, color: Colors.warning, fontWeight: '700' },
+  formContainer: { padding: 20 },
+  label: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600', marginBottom: 8, marginTop: 16 },
+  input: { backgroundColor: Colors.bgInput, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 14, paddingVertical: 12, color: Colors.textPrimary, fontSize: 15 },
+  chipScroll: { marginBottom: 4 },
+  row: { flexDirection: 'row', gap: 12 },
+  miniChip: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: Colors.bgSecondary, borderWidth: 1, borderColor: Colors.border, marginRight: 8 },
+  miniChipActive: { backgroundColor: Colors.accentGlow, borderColor: Colors.accent },
+  miniChipText: { fontSize: 13, color: Colors.textSecondary },
+  miniChipTextActive: { color: Colors.accent, fontWeight: '700' },
+  
+  errorBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.dangerBg, padding: 12, borderRadius: 8, marginTop: 16, borderWidth: 1, borderColor: Colors.danger },
+  errorText: { color: Colors.danger, fontSize: 13, fontWeight: '600', flex: 1 },
 
-  qtyRow: { flexDirection: 'row', gap: 20, marginBottom: 10 },
-  qtyItem: {},
-  qtyLabel: { fontSize: 11, color: Colors.textMuted },
-  qtyValue: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
-  qtyMinValue: { fontSize: 14, color: Colors.textSecondary },
-
-  barTrack: { height: 5, backgroundColor: Colors.white05, borderRadius: 3, marginBottom: 14 },
-  barFill: { height: 5, borderRadius: 3 },
-
-  cardActions: { flexDirection: 'row', gap: 10, borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 12 },
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 8, backgroundColor: Colors.infoBg },
-  editBtnText: { fontSize: 12, color: Colors.info, fontWeight: '600' },
-  deleteBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 8, backgroundColor: Colors.dangerBg },
-  deleteBtnText: { fontSize: 12, color: Colors.danger, fontWeight: '600' },
-
-
-  // Modal
-  modalOverlay: { flex: 1, backgroundColor: Colors.overlay },
-  modalScroll: { flexGrow: 1, justifyContent: 'flex-end' },
-  modalContent: {
-    backgroundColor: Colors.bgSecondary, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    padding: 24,
-  },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary },
-  modalLabel: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600', marginBottom: 8, marginTop: 14 },
-  modalInput: {
-    backgroundColor: Colors.bgInput, borderRadius: 12, borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: 14, paddingVertical: 12, color: Colors.textPrimary, fontSize: 15,
-  },
-  rowInputs: { flexDirection: 'row', gap: 12 },
-  saveBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Colors.accent, borderRadius: 12, height: 50, gap: 10, marginTop: 24,
-  },
+  actionRow: { flexDirection: 'row', gap: 12, marginTop: 30 },
+  cancelBtn: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.bgTertiary, borderRadius: 12, height: 50, borderWidth: 1, borderColor: Colors.border },
+  cancelBtnText: { fontSize: 15, fontWeight: '600', color: Colors.textSecondary },
+  saveBtn: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.accent, borderRadius: 12, height: 50, gap: 8 },
   saveBtnText: { fontSize: 15, fontWeight: '700', color: Colors.bgPrimary },
 });
