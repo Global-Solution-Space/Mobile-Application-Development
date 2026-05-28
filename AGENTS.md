@@ -1,16 +1,19 @@
 # 🤖 AGENTS.md — Guia de Contexto para IA
 
-Bem-vindo(a) ao projeto **Terra Nova**, agente! Este documento serve como base de conhecimento para que você entenda o contexto, as regras de negócio e a arquitetura do projeto atual, evitando alucinações e regressões no código.
+O Terra Nova é uma plataforma de agricultura inteligente baseada em análise satelital e monitoramento geoespacial de lavouras.
+
+A solução utiliza dados simulados de satélite, sensores e análise ambiental para acompanhar em tempo real a saúde agrícola de diferentes lotes de cultivo, auxiliando produtores rurais na tomada de decisão.
+
+O sistema identifica anomalias como estresse hídrico, risco de pragas, baixa fertilidade e variações climáticas, emitindo alertas automáticos e recomendações preventivas para aumentar a produtividade e reduzir perdas agrícolas.
+
+Inspirado em tecnologias utilizadas na economia espacial e no sensoriamento remoto, o Terra Nova conecta inovação tecnológica, agronegócio e inteligência de dados em uma solução moderna de agricultura de precisão.
+
 
 ---
 
 ## 1. Visão Geral do Projeto
 **Terra Nova** é um aplicativo mobile focado em **Gestão Agrícola Inteligente e Coleta de Dados**. Ele permite que produtores rurais gerenciem estufas, lotes de cultivo, controle de estoque (insumos) e agendamento de tarefas. 
 O aplicativo possui uma pegada altamente tecnológica, simulando **integração com dados de satélite** para emitir alertas climáticos e detectar anomalias biológicas (pragas) de forma antecipada.
-
-> ⚠️ **REGRA CRÍTICA DE TEMA (O QUE NÃO FAZER):** 
-> Anteriormente o projeto tinha uma temática espacial ("SIDONIA", "Astronautas", "Espaço", "Falta de Oxigênio"). **TUDO ISSO FOI REMOVIDO.** 
-> **NUNCA** use termos de viagens espaciais ou ficção científica. Use sempre terminologia agronômica real (Produtor, Lote, Estufa, Trator, Praga, Seca, Análise Espectral por Satélite, etc).
 
 ---
 
