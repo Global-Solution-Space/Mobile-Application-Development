@@ -1,14 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export type HeaderProps = { title?: string; };
 
 const APP_NAME = "Terra Nova";
 
 export function Header({ title }: HeaderProps) {
+    const insets = useSafeAreaInsets();
+    
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingTop: Math.max(insets.top, Platform.OS === 'android' ? 20 : 0) + 10 }]}>
             <View style={styles.brandContainer}>
                 <FontAwesome5 name="seedling" size={20} color="#10B981" />
                 <Text style={styles.brandText}>{APP_NAME}</Text>
@@ -24,7 +27,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "space-between",
         paddingHorizontal: 20,
-        paddingTop: Platform.OS === 'android' ? 40 : 20, 
         paddingBottom: 18,
         backgroundColor: "#0A1F16",
         borderBottomWidth: 1,
