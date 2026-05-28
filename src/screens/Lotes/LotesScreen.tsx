@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ScrollView, TextInput
+  ScrollView, TextInput, Alert
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
@@ -69,8 +69,14 @@ export function LotesScreen() {
   };
 
   const confirmDelete = (lote: Lote) => {
-    const confirmacao = window.confirm(`Deseja remover o lote de ${lote.tipoCultura} da ${lote.estufaNome}?`);
-    if (confirmacao) deleteLote(lote.id);
+    Alert.alert(
+      'Remover Lote',
+      `Deseja remover o lote de ${lote.tipoCultura} da ${lote.estufaNome}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Excluir', style: 'destructive', onPress: () => deleteLote(lote.id) }
+      ]
+    );
   };
 
   const handleRegarManual = () => {

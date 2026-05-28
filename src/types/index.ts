@@ -56,10 +56,21 @@ export interface Insumo {
   id: string;
   nome: string;
   categoria: CategoriaInsumo;
+  tipo?: string; // Para compatibilidade com telas que usam item.tipo
   quantidade: number;
   unidade: string;
   minimo: number;
+  quantidadeMinima?: number; // Para compatibilidade com telas que usam item.quantidadeMinima
   atualizadoEm: string;
+}
+
+// ── Irrigação ────────────────────────────────────────
+export interface RegistroIrrigacao {
+  id: string;
+  lote_id: string;
+  quantidade_agua_ml: number;
+  data_hora: string;
+  tipo_acionamento: string;
 }
 
 // ── Colheita ────────────────────────────────────────
