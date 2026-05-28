@@ -1,41 +1,28 @@
 import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
-
-const mockUser = {
-  nome: 'Luna de Carvalho',
-  lotesAtivos: 4,
-  totalColheitas: 12,
-  totalEstufas: 2,
-  email: 'luna@terranova.com',
-  matricula: 'AST-2026',
-  base: 'Marte Alpha',
-  criadoEm: 'Maio de 2026'
-};
+// 1. Importamos a loja de dados que o Enzo criou!
+import { useAppStore } from '../../store/useAppStore';
 
 const COLORS = {
-  bg: '#04100B',
-  bgCard: '#071a10',
-  bgCardBorder: '#ffffff12',
-  primary: '#10B981',
-  primaryLight: '#6EE7B7',
-  text: '#ffffff',
-  textMuted: '#8BA89A',
-  danger: '#f87171',
-  dangerBorder: '#7f1d1d',
+  bg: '#04100B', bgCard: '#071a10', bgCardBorder: '#ffffff12',
+  primary: '#10B981', primaryLight: '#6EE7B7', text: '#ffffff',
+  textMuted: '#8BA89A', danger: '#f87171', dangerBorder: '#7f1d1d',
 };
 
 export function PerfilScreen() {
   const navigation = useNavigation<any>();
+  
+  // 2. Puxamos os dados reais do usuário logado
+  const { currentUser, logout, lotes, colheitas } = useAppStore();
+
+  // 3. Calculamos as estatísticas reais
+  const totalColhido = colheitas ? colheitas.reduce((s: number, c: any) => s + c.quantidadeKg, 0) : 0;
+  const lotesAtivos = lotes ? lotes.length : 0;
 
   const handleSignOut = () => {
     Alert.alert(
@@ -43,7 +30,7 @@ export function PerfilScreen() {
       'Tem certeza que deseja sair?',
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sair', style: 'destructive', onPress: () => console.log('Deslogou') },
+        { text: 'Sair', style: 'destructive', onPress: logout }, // Usando o logout real do Enzo
       ]
     );
   };
@@ -55,10 +42,7 @@ export function PerfilScreen() {
   return (
     <View style={styles.container}>
       <Header title="Perfil" />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.avatarSection}>
           <View style={styles.avatarRing}>
             <View style={styles.avatarCircle}>
@@ -66,21 +50,22 @@ export function PerfilScreen() {
             </View>
           </View>
 
-          <Text style={styles.userName}>{mockUser.nome}</Text>
+          {/* Nome real vindo do login */}
+          <Text style={styles.userName}>{currentUser?.nome || 'Produtor'}</Text>
 
           <View style={styles.roleBadge}>
             <Text style={styles.roleText}>Engenheira de Cultivo</Text>
           </View>
 
           <View style={styles.tagRow}>
-            <View style={styles.tag}><Text style={styles.tagText}>{mockUser.base}</Text></View>
+            <View style={styles.tag}><Text style={styles.tagText}>Marte Alpha</Text></View>
             <View style={styles.tag}><Text style={styles.tagText}>Hidroponia</Text></View>
             <View style={styles.tag}><Text style={styles.tagText}>Nível 3</Text></View>
           </View>
 
           <TouchableOpacity
             style={styles.editButton}
-            onPress={() => navigation.navigate('EditarPerfil')}
+            onPress={() => navigation.navigate('EditarPerfil')} // Mantendo a sua tela de segurança!
             activeOpacity={0.7}
           >
             <Ionicons name="create-outline" size={14} color={COLORS.text} />
@@ -90,18 +75,18 @@ export function PerfilScreen() {
 
         <View style={styles.section}>
           <View style={styles.statsRow}>
-            <StatCard label="Lotes ativos" value={mockUser.lotesAtivos} />
-            <StatCard label="Colheitas" value={mockUser.totalColheitas} />
-            <StatCard label="Estufas" value={mockUser.totalEstufas} />
+            <StatCard label="Lotes ativos" value={lotesAtivos} />
+            <StatCard label="Kg Colhidos" value={totalColhido} />
+            <StatCard label="Estufas" value={2} />
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Informações</Text>
-          <InfoRow icon="mail-outline" label="E-mail" value={mockUser.email} />
-          <InfoRow icon="id-card-outline" label="Matrícula" value={mockUser.matricula} />
-          <InfoRow icon="planet-outline" label="Base" value={mockUser.base} />
-          <InfoRow icon="calendar-outline" label="Membro desde" value={mockUser.criadoEm} />
+          {/* Email e Data reais */}
+          <InfoRow icon="mail-outline" label="E-mail" value={currentUser?.email || '—'} />
+          <InfoRow icon="id-card-outline" label="Matrícula" value="AST-2026" />
+          <InfoRow icon="calendar-outline" label="Membro desde" value={currentUser?.criadoEm ? new Date(currentUser.criadoEm).toLocaleDateString('pt-BR') : '—'} />
         </View>
 
         <View style={styles.section}>
@@ -112,11 +97,7 @@ export function PerfilScreen() {
           <ActionRow icon="information-circle-outline" label="Sobre o Terra Nova" onPress={() => handleActionPress('Sobre')} />
         </View>
 
-        <TouchableOpacity
-          style={styles.dangerButton}
-          onPress={handleSignOut}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity style={styles.dangerButton} onPress={handleSignOut} activeOpacity={0.8}>
           <Ionicons name="log-out-outline" size={18} color={COLORS.danger} />
           <Text style={styles.dangerText}>Sair da conta</Text>
         </TouchableOpacity>
@@ -125,7 +106,7 @@ export function PerfilScreen() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
     <View style={styles.statCard}>
       <View style={styles.statCardAccent} />

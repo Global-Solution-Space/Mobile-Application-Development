@@ -49,7 +49,7 @@ export function TabRoutes() {
         <Tab.Screen 
             name="Perfil" 
             component={PerfilScreen} 
-            options={{ tabBarIcon: ({ color }) => <FontAwesome5 name="user-astronaut" size={24} color={color} /> }} 
+            options={{ tabBarIcon: ({ color }) => <FontAwesome5 name="user-circle" size={24} color={color} /> }} 
         />
     </Tab.Navigator>
   );
