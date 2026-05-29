@@ -1,79 +1,77 @@
 // ═══════════════════════════════════════════════════════════════
-// Terra Nova — TypeScript Types
+// Terra Nova — Definições de Tipos (Dicionário do Sistema)
 // ═══════════════════════════════════════════════════════════════
 
-// ── Usuário ────────────────────────────────────────
 export interface User {
   id: string;
   nome: string;
   email: string;
-  senha: string;
-  avatar?: string;
+  senha?: string;
+  base?: string; // Adicionado para o seu Perfil!
   criadoEm: string;
 }
 
-// ── Lote de Cultivo ────────────────────────────────
-export type FaseCrescimento = 'Germinando' | 'Crescendo' | 'Maduro' | 'Pronto para Colheita' | 'Colhido' | 'Perdido';
 export type StatusLote = 'Saudável' | 'Atenção' | 'Crítico';
-export type TipoCultura = 'Batata' | 'Tomate' | 'Alface' | 'Cenoura' | 'Morango' | 'Soja' | 'Trigo' | 'Espinafre';
+export type TipoCultura = 'Tomate' | 'Alface' | 'Batata' | 'Morango' | 'Espinafre' | 'Cenoura' | string;
 
 export interface Lote {
   id: string;
   tipoCultura: TipoCultura;
-  estufaId: string;
-  estufaNome: string;
+  estufaId?: string;
+  estufaNome?: string;
   dataPlantio: string;
-  fase: FaseCrescimento;
+  fase: string;
   status: StatusLote;
   quantidade: number;
-  observacoes: string;
+  observacoes?: string;
   criadoPor: string;
   atualizadoEm: string;
 }
 
-// ── Estufa ──────────────────────────────────────────
-export type TipoEstufa = 'Hidropônica' | 'Aeropônica' | 'Aquapônica' | 'Tradicional';
-export type StatusEstufa = 'Operacional' | 'Manutenção' | 'Offline' | 'Emergência';
+export interface RegistroIrrigacao {
+  id: string;
+  lote_id: string;
+  quantidade_agua_ml: number;
+  data_hora: string;
+  tipo_acionamento: string;
+}
 
 export interface Estufa {
   id: string;
   nome: string;
-  tipo: TipoEstufa;
-  status: StatusEstufa;
-  capacidade: number;
-  lotesAtivos: number;
-  temperatura: number;
-  umidade: number;
-  nivelAgua: number;
-  luminosidade: number;
-  co2: number;
+  tipo: string;
+  status: string;
+  capacidade?: number;
+  lotesAtivos?: number;
+  temperatura?: number;
+  umidade?: number;
+  nivelAgua?: number;
+  luminosidade?: number;
+  co2?: number;
 }
-
-// ── Estoque / Insumo ────────────────────────────────
-export type CategoriaInsumo = 'Semente' | 'Adubo' | 'Nutriente' | 'Fertilizante' | 'Pesticida' | 'Substrato';
 
 export interface Insumo {
   id: string;
   nome: string;
-  categoria: CategoriaInsumo;
+  categoria?: string;
+  tipo?: string;
   quantidade: number;
   unidade: string;
-  minimo: number;
-  atualizadoEm: string;
+  minimo?: number;
+  quantidadeMinima?: number;
+  atualizadoEm?: string;
 }
 
-// ── Colheita ────────────────────────────────────────
 export interface Colheita {
   id: string;
   loteId: string;
-  tipoCultura: TipoCultura;
-  estufaNome: string;
+  tipoCultura: string;
+  estufaNome?: string;
   dataColheita: string;
   quantidadeKg: number;
-  qualidade: 'Excelente' | 'Boa' | 'Regular' | 'Ruim';
+  qualidade: string;
 }
 
-// ── Log de Atividade ────────────────────────────────
 export type TipoLog = 'criacao' | 'edicao' | 'exclusao' | 'colheita' | 'alerta' | 'sistema';
 
 export interface LogAtividade {
@@ -84,9 +82,6 @@ export interface LogAtividade {
   timestamp: string;
 }
 
-// ── Tarefa / Agendamento ────────────────────────────
-export type PrioridadeTarefa = 'Baixa' | 'Média' | 'Alta' | 'Urgente';
-
 export interface Tarefa {
   id: string;
   titulo: string;
@@ -94,32 +89,20 @@ export interface Tarefa {
   estufaId?: string;
   estufaNome?: string;
   dataAgendada: string;
-  prioridade: PrioridadeTarefa;
+  prioridade: 'Baixa' | 'Média' | 'Alta' | 'Urgente' | string;
   concluida: boolean;
   criadaEm: string;
 }
 
-// ── Alerta de Evento Crítico ────────────────────────
-export type TipoEvento = 'falta_energia' | 'praga_detectada' | 'falha_irrigacao' | 'surto_temperatura' | 'contaminacao';
+export type TipoEvento = 'falta_energia' | 'praga_detectada' | 'falha_irrigacao' | 'surto_temperatura' | 'contaminacao' | string;
 
 export interface EventoCritico {
   id: string;
   tipo: TipoEvento;
   titulo: string;
   descricao: string;
-  severidade: 'Alta' | 'Crítica';
+  severidade: 'Alta' | 'Crítica' | string;
   estufasAfetadas: string[];
   timestamp: string;
   resolvido: boolean;
 }
-
-// ── Navegação ───────────────────────────────────────
-export type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
-  Tabs: undefined;
-  Estufas: undefined;
-  Colheitas: undefined;
-  Logs: undefined;
-  Tarefas: undefined;
-};

@@ -60,22 +60,21 @@ Telas isoladas por funcionalidade. Nenhum acesso direto a banco ou requisições
 1. **Autenticação:** Login e Registro (Auth condicional no `MainStack`).
 2. **Dashboard (Home):** Exibição de KPIs e botão de simulação de "Eventos Críticos" que puxa alertas de satélite simulados.
 3. **Lotes de Cultivo:** CRUD completo + Filtros avançados por cultura e status.
-4. **Estoque de Insumos:** CRUD de adubos, sementes, etc., com alerta de estoque mínimo.
+4. **Estoque de Insumos:** CRUD de adubos, sementes, etc., com alerta de estoque mínimo. Compatibilidade total de nomenclatura (`tipo` e `quantidadeMinima` vs `categoria` e `minimo`).
 5. **Estufas (Setores):** Monitoramento de sensores de luz, água e ocupação.
 6. **Colheitas:** Relatório e histórico.
 7. **Tarefas:** Agendamento com prioridades.
 8. **Logs de Atividades:** Timeline de ações tomadas pelo usuário.
+9. **Histórico de Irrigação (Novo):** Registro de quantidade (ml), data/hora e tipo de acionamento (Manual/Automático) por lote.
 
 ---
 
-## 5. Próximos Passos (Integração com API Java)
-O app está estruturalmente pronto para ser conectado a um Backend (API Java Spring Boot).
-**Diretrizes para a integração:**
-- **NÃO** altere a camada visual (UI/Telas).
-- A integração acontecerá **exclusivamente** alterando as funções do `src/store/useAppStore.ts`.
-- Substitua a manipulação de arrays locais por chamadas `axios.get`, `axios.post`, etc.
-- Adicione gerenciamento de estado de carregamento (`isLoading: boolean`) na Store para dar feedback visual nas telas durante as requisições HTTP.
-- O componente `<PrimaryButton />` já possui a prop `isLoading` pronta para exibir um spinner durante requisições.
+## 5. Integração com API Java (Pronto & Estruturado)
+O aplicativo está 100% preparado e pré-conectado à API Java Spring Boot:
+* **Cliente HTTP:** Axios instalado e configurado em `src/store/useAppStore.ts` com timeout e baseURL direcionados à API Java (`http://localhost:8080/api`).
+* **Operações Assíncronas:** Todas as ações do store (`login`, `register`, `addLote`, `addInsumo`, etc.) foram convertidas para `async/await` com tratamento de exceções.
+* **Feedback de Carregamento:** O estado `isLoading` foi inserido no store global. Botões e formulários mostram spinners de progresso durante as requisições HTTP.
+* **Arquitetura Offline-First (Fallback):** As requisições possuem tratamento com fallback para o estado local e persistência em `AsyncStorage` se a API estiver offline ou inacessível. O desenvolvedor precisa apenas descomentar as linhas de código com chamadas Axios para ativar a integração ponta a ponta.
 
 ---
 
