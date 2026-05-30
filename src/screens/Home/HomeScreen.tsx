@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
-// Terra Nova — Dashboard de Monitoramento
+// Terra Nova — Dashboard de Monitorização
 // Exibe alertas, métricas das estufas, e simulador de eventos
 // ═══════════════════════════════════════════════════════════════
 
 import React from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, Dimensions
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
@@ -26,33 +25,23 @@ export function HomeScreen() {
   const lotesCriticos = lotes.filter(l => l.status === 'Crítico').length;
   const lotesAtencao = lotes.filter(l => l.status === 'Atenção').length;
   const estufasOp = estufas.filter(e => e.status === 'Operacional').length;
-  const insumosAbaixo = insumos.filter(i => i.quantidade < i.minimo).length;
+  const insumosAbaixo = insumos.filter(i => i.quantidade < (i.minimo || 10)).length;
   const tarefasPendentes = tarefas.filter(t => !t.concluida).length;
   const totalColhidoKg = colheitas.reduce((s, c) => s + c.quantidadeKg, 0);
-
-  const handleSimular = () => {
-    Alert.alert(
-      '🚨 Simulador de Eventos',
-      'Deseja simular um evento crítico aleatório? Isso vai gerar um alerta no sistema.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Simular', style: 'destructive', onPress: simularEvento },
-      ]
-    );
-  };
 
   return (
     <View style={styles.container}>
       <Header title="Dashboard" />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        
         {/* ── Saudação ─── */}
         <View style={styles.greetingContainer}>
           <Text style={styles.greeting}>Olá, {currentUser?.nome || 'Produtor'} 👨‍🚀</Text>
-          <Text style={styles.greetingSub}>Monitoramento geral das estufas</Text>
+          <Text style={styles.greetingSub}>Monitorização geral das estufas</Text>
         </View>
 
-        {/* ── Evento Crítico (se houver) ─── */}
-        {eventoCritico && (
+        {/* ── Evento Crítico / Simulador ─── */}
+        {eventoCritico ? (
           <View style={styles.criticalCard}>
             <View style={styles.criticalHeader}>
               <FontAwesome5 name="exclamation-triangle" size={20} color={Colors.danger} />
@@ -72,6 +61,11 @@ export function HomeScreen() {
               <Text style={styles.resolveBtnText}>Resolver Evento</Text>
             </TouchableOpacity>
           </View>
+        ) : (
+          <TouchableOpacity style={styles.simBtnTop} onPress={simularEvento} activeOpacity={0.8}>
+            <FontAwesome5 name="satellite-dish" size={16} color="#FFF" />
+            <Text style={styles.simBtnText}>Simular Análise de Satélite</Text>
+          </TouchableOpacity>
         )}
 
         {/* ── KPIs Grid ─── */}
@@ -125,52 +119,55 @@ export function HomeScreen() {
           {'  '}Monitor de Estufas
         </Text>
 
-        {estufas.map(estufa => (
-          <View key={estufa.id} style={styles.estufaCard}>
-            <View style={styles.estufaHeader}>
-              <View style={styles.estufaNameRow}>
-                <View style={[styles.statusDot, {
-                  backgroundColor: estufa.status === 'Operacional' ? Colors.success :
-                    estufa.status === 'Manutenção' ? Colors.warning : Colors.danger
-                }]} />
-                <Text style={styles.estufaNome}>{estufa.nome}</Text>
+        {estufas.map(estufa => {
+          const temp = estufa.temperatura || 0;
+          const agua = estufa.nivelAgua || 0;
+          const luz = estufa.luminosidade || 0;
+          const co2 = estufa.co2 || 0;
+          const cap = estufa.capacidade || 1;
+          const ativos = estufa.lotesAtivos || 0;
+
+          return (
+            <View key={estufa.id} style={styles.estufaCard}>
+              <View style={styles.estufaHeader}>
+                <View style={styles.estufaNameRow}>
+                  <View style={[styles.statusDot, {
+                    backgroundColor: estufa.status === 'Operacional' ? Colors.success :
+                      estufa.status === 'Manutenção' ? Colors.warning : Colors.danger
+                  }]} />
+                  <Text style={styles.estufaNome}>{estufa.nome}</Text>
+                </View>
+                <View style={styles.estufaTypeBadge}>
+                  <Text style={styles.estufaTypeText}>{estufa.tipo}</Text>
+                </View>
               </View>
-              <View style={styles.estufaTypeBadge}>
-                <Text style={styles.estufaTypeText}>{estufa.tipo}</Text>
+
+              <View style={styles.sensorsGrid}>
+                <SensorItem icon="thermometer-half" label="Temp" value={`${temp}°C`}
+                  color={temp > 30 ? Colors.danger : temp > 27 ? Colors.warning : Colors.accent} />
+                <SensorItem icon="tint" label="Água" value={`${agua}%`}
+                  color={agua < 50 ? Colors.danger : agua < 70 ? Colors.warning : Colors.info} />
+                <SensorItem icon="sun" label="Luminosidade" value={`${luz} UV`}
+                  color={luz > 20 ? Colors.danger : luz > 15 ? Colors.warning : Colors.accent} />
+                <SensorItem icon="wind" label="CO₂" value={`${co2} ppm`}
+                  color={co2 > 450 ? Colors.warning : Colors.accent} />
+              </View>
+
+              <View style={styles.barContainer}>
+                <View style={styles.barLabel}>
+                  <Text style={styles.barLabelText}>Ocupação</Text>
+                  <Text style={styles.barLabelValue}>{ativos}/{cap}</Text>
+                </View>
+                <View style={styles.barTrack}>
+                  <View style={[styles.barFill, {
+                    width: `${Math.min((ativos / cap) * 100, 100)}%`,
+                    backgroundColor: ativos / cap > 0.8 ? Colors.warning : Colors.accent,
+                  }]} />
+                </View>
               </View>
             </View>
-
-            <View style={styles.sensorsGrid}>
-              <SensorItem icon="thermometer-half" label="Temp" value={`${estufa.temperatura}°C`}
-                color={estufa.temperatura > 30 ? Colors.danger : estufa.temperatura > 27 ? Colors.warning : Colors.accent} />
-              <SensorItem icon="tint" label="Água" value={`${estufa.nivelAgua}%`}
-                color={estufa.nivelAgua < 50 ? Colors.danger : estufa.nivelAgua < 70 ? Colors.warning : Colors.info} />
-              <SensorItem icon="sun" label="Luminosidade" value={`${estufa.luminosidade} UV`}
-                color={estufa.luminosidade > 20 ? Colors.danger : estufa.luminosidade > 15 ? Colors.warning : Colors.accent} />
-              <SensorItem icon="wind" label="CO₂" value={`${estufa.co2} ppm`}
-                color={estufa.co2 > 450 ? Colors.warning : Colors.accent} />
-            </View>
-
-            <View style={styles.barContainer}>
-              <View style={styles.barLabel}>
-                <Text style={styles.barLabelText}>Ocupação</Text>
-                <Text style={styles.barLabelValue}>{estufa.lotesAtivos}/{estufa.capacidade}</Text>
-              </View>
-              <View style={styles.barTrack}>
-                <View style={[styles.barFill, {
-                  width: `${Math.min((estufa.lotesAtivos / estufa.capacidade) * 100, 100)}%`,
-                  backgroundColor: estufa.lotesAtivos / estufa.capacidade > 0.8 ? Colors.warning : Colors.accent,
-                }]} />
-              </View>
-            </View>
-          </View>
-        ))}
-
-        {/* ── Botão Simulador ─── */}
-        <TouchableOpacity style={styles.simBtn} onPress={handleSimular} activeOpacity={0.8}>
-          <FontAwesome5 name="bolt" size={16} color="#FFF" />
-          <Text style={styles.simBtnText}>Simular Evento Crítico</Text>
-        </TouchableOpacity>
+          );
+        })}
 
         <View style={{ height: 30 }} />
       </ScrollView>
@@ -194,11 +191,18 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 100 },
 
-  greetingContainer: { marginBottom: 20 },
+  greetingContainer: { marginBottom: 16 },
   greeting: { fontSize: 22, fontWeight: 'bold', color: Colors.textPrimary },
   greetingSub: { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
 
-  // Evento Crítico
+  // Evento Crítico & Botão Topo
+  simBtnTop: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.danger, borderRadius: 12, height: 50, gap: 10,
+    marginBottom: 20,
+  },
+  simBtnText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
+  
   criticalCard: {
     backgroundColor: Colors.criticalBg,
     borderRadius: 14,
@@ -276,13 +280,5 @@ const styles = StyleSheet.create({
   barLabelText: { fontSize: 11, color: Colors.textMuted },
   barLabelValue: { fontSize: 11, color: Colors.textSecondary, fontWeight: '600' },
   barTrack: { height: 6, backgroundColor: Colors.white05, borderRadius: 3 },
-  barFill: { height: 6, borderRadius: 3 },
-
-  // Simulador
-  simBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Colors.danger, borderRadius: 12, height: 50, gap: 10,
-    marginTop: 20,
-  },
-  simBtnText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
+  barFill: { height: 6, borderRadius: 3 }
 });

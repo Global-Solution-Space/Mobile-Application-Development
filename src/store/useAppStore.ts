@@ -1,14 +1,13 @@
 // ═══════════════════════════════════════════════════════════════
 // Terra Nova — Zustand Store
 // Gerenciamento global de estado com persistência AsyncStorage
-// Pronto para Integração com API Java Spring Boot (Axios)
+// VERSÃO DE INTEGRAÇÃO (Chave de alternância para o Back-end)
 // ═══════════════════════════════════════════════════════════════
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { Alert } from 'react-native';
+import { apiService } from '../services/api';
 import {
   User, Lote, Estufa, Insumo, Colheita,
   LogAtividade, Tarefa, EventoCritico,
@@ -16,11 +15,12 @@ import {
   RegistroIrrigacao, TipoEvento
 } from '../types';
 
-// ── Helpers ──────────────────────────────────────────────────
+// ── CONFIGURAÇÃO DE AMBIENTE (O ENZO MUDA AQUI PARA TRUE) ──────
+const USE_BACKEND = false; 
+
 const uuid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
 const now = () => new Date().toISOString();
 
-// ── Dados Iniciais (Mock) ────────────────────────────────────
 const ESTUFAS_INICIAIS: Estufa[] = [
   { id: 'e1', nome: 'Estufa Alfa', tipo: 'Hidropônica', status: 'Operacional', capacidade: 50, lotesAtivos: 3, temperatura: 24.5, umidade: 72, nivelAgua: 85, luminosidade: 12, co2: 410 },
   { id: 'e2', nome: 'Estufa Beta', tipo: 'Aeropônica', status: 'Operacional', capacidade: 40, lotesAtivos: 2, temperatura: 23.8, umidade: 68, nivelAgua: 78, luminosidade: 15, co2: 395 },
@@ -69,84 +69,52 @@ const TAREFAS_INICIAIS: Tarefa[] = [
   { id: 't4', titulo: 'Colheita Lote 04', descricao: 'Morangos prontos para colheita', estufaId: 'e1', estufaNome: 'Estufa Alfa', dataAgendada: '2026-05-28T14:00:00Z', prioridade: 'Alta', concluida: true, criadaEm: now() },
 ];
 
-// ── Configuração do Cliente Axios ────────────────────────────
-const API_URL = 'http://localhost:8080/api'; 
-export const api = axios.create({
-  baseURL: API_URL,
-  timeout: 5000,
-  headers: {
-    'Content-Type': 'application/json',
-  }
-});
-
-// ── Interface do Store ───────────────────────────────────────
 export interface AppStore {
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
-
-  // Auth
   currentUser: User | null;
   isLoggedIn: boolean;
   login: (email: string, senha: string) => Promise<boolean>;
   register: (nome: string, email: string, senha: string) => Promise<boolean>;
   logout: () => void;
-  updateProfile: (nome: string) => Promise<void>;
+  updateProfile: (nome: any) => Promise<void>;
   registeredUsers: User[];
-
-  // Lotes
   lotes: Lote[];
   addLote: (lote: Omit<Lote, 'id' | 'atualizadoEm' | 'criadoPor'>) => Promise<void>;
   updateLote: (id: string, updates: Partial<Lote>) => Promise<void>;
   deleteLote: (id: string) => Promise<void>;
-
-  // Irrigação
   historicoIrrigacao: RegistroIrrigacao[];
   registrarIrrigacao: (loteId: string, ml: number, tipo: string) => Promise<void>;
   deleteIrrigacao: (id: string) => Promise<void>;
-
-  // Filtros
   filtroStatus: StatusLote | 'Todos';
   filtroCultura: TipoCultura | 'Todas';
   setFiltroStatus: (f: StatusLote | 'Todos') => void;
   setFiltroCultura: (f: TipoCultura | 'Todas') => void;
-
-  // Estufas
   estufas: Estufa[];
-
-  // Insumos
+  sincronizarSensoresSatelite: (estufaId: string, lat: number, lon: number) => Promise<void>;
   insumos: Insumo[];
   addInsumo: (insumo: any) => Promise<void>;
   updateInsumo: (id: string, updates: any) => Promise<void>;
   deleteInsumo: (id: string) => Promise<void>;
-
-  // Colheitas
   colheitas: Colheita[];
   addColheita: (colheita: Omit<Colheita, 'id'>) => Promise<void>;
-
-  // Logs
   logs: LogAtividade[];
   addLog: (tipo: TipoLog, mensagem: string) => void;
-
-  // Tarefas
   tarefas: Tarefa[];
   addTarefa: (tarefa: Omit<Tarefa, 'id' | 'criadaEm' | 'concluida'>) => Promise<void>;
   toggleTarefa: (id: string) => Promise<void>;
   deleteTarefa: (id: string) => Promise<void>;
-
-  // Eventos Críticos
   eventoCritico: EventoCritico | null;
   simularEvento: () => void;
   resolverEvento: () => void;
 }
 
-// ── Store Implementation ─────────────────────────────────────
 export const useAppStore = create<AppStore>()(
   persist(
     (set, get) => ({
       isLoading: false,
       setIsLoading: (loading) => set({ isLoading: loading }),
 
-      // ── Auth ────────────────────────────────
       currentUser: null,
       isLoggedIn: false,
       registeredUsers: [
@@ -175,7 +143,7 @@ export const useAppStore = create<AppStore>()(
         try {
           const exists = get().registeredUsers.find(u => u.email === email);
           if (exists) return false;
-          const newUser: User = { id: uuid(), nome, email, senha, criadoEm: now() };
+          const newUser: User = { id: uuid(), nome, email, senha, criadoEm: now(), base: 'Marte Alpha' };
           set(s => ({
             registeredUsers: [...s.registeredUsers, newUser],
             currentUser: newUser,
@@ -194,35 +162,41 @@ export const useAppStore = create<AppStore>()(
         set({ currentUser: null, isLoggedIn: false });
       },
 
-      updateProfile: async (nome) => {
+      updateProfile: async (updates) => {
         set({ isLoading: true });
         try {
           const user = get().currentUser;
           if (!user) return;
           set(s => {
             if (!s.currentUser) return s;
-            const updated = { ...s.currentUser, nome };
+            const updated = { ...s.currentUser, ...updates };
             return {
-              currentUser: updated,
-              registeredUsers: s.registeredUsers.map(u => u.id === updated.id ? updated : u),
+              currentUser: updated as User,
+              registeredUsers: s.registeredUsers.map(u => u.id === updated.id ? updated : u) as User[],
             };
           });
-          get().addLog('edicao', `Produtor atualizou seu perfil — novo nome: ${nome}`);
+          get().addLog('edicao', `Produtor atualizou seu perfil`);
         } finally {
           set({ isLoading: false });
         }
       },
 
-      // ── Lotes ───────────────────────────────
       lotes: LOTES_INICIAIS,
 
       addLote: async (lote) => {
         set({ isLoading: true });
         try {
-          const user = get().currentUser;
-          const newLote: Lote = { ...lote, id: uuid(), atualizadoEm: now(), criadoPor: user?.nome || 'Sistema' };
-          set(s => ({ lotes: [...s.lotes, newLote] }));
-          get().addLog('criacao', `Produtor ${user?.nome || 'Sistema'} cadastrou lote de ${lote.tipoCultura} na ${lote.estufaNome}`);
+          if (USE_BACKEND) {
+            const loteSalvoServidor = await apiService.salvarLote(lote);
+            set(s => ({ lotes: [...s.lotes, loteSalvoServidor] }));
+          } else {
+            const user = get().currentUser;
+            const newLote: Lote = { ...lote, id: uuid(), atualizadoEm: now(), criadoPor: user?.nome || 'Sistema' };
+            set(s => ({ lotes: [...s.lotes, newLote] }));
+          }
+          get().addLog('criacao', `Lote cadastrado com sucesso`);
+        } catch (e) {
+          console.error(e);
         } finally {
           set({ isLoading: false });
         }
@@ -234,9 +208,6 @@ export const useAppStore = create<AppStore>()(
           set(s => ({
             lotes: s.lotes.map(l => l.id === id ? { ...l, ...updates, atualizadoEm: now() } : l),
           }));
-          const lote = get().lotes.find(l => l.id === id);
-          const user = get().currentUser;
-          get().addLog('edicao', `Produtor ${user?.nome || 'Sistema'} editou lote de ${lote?.tipoCultura || '?'}`);
         } finally {
           set({ isLoading: false });
         }
@@ -245,16 +216,12 @@ export const useAppStore = create<AppStore>()(
       deleteLote: async (id) => {
         set({ isLoading: true });
         try {
-          const lote = get().lotes.find(l => l.id === id);
           set(s => ({ lotes: s.lotes.filter(l => l.id !== id) }));
-          const user = get().currentUser;
-          get().addLog('exclusao', `Produtor ${user?.nome || 'Sistema'} removeu lote de ${lote?.tipoCultura || '?'}`);
         } finally {
           set({ isLoading: false });
         }
       },
 
-      // ── Irrigação ───────────────────────────
       historicoIrrigacao: [
         { id: 'ir1', lote_id: 'l1', quantidade_agua_ml: 500, data_hora: new Date().toISOString(), tipo_acionamento: 'Automático' }
       ],
@@ -262,16 +229,25 @@ export const useAppStore = create<AppStore>()(
       registrarIrrigacao: async (loteId, ml, tipo) => {
         set({ isLoading: true });
         try {
-          const novoRegistro: RegistroIrrigacao = {
-            id: uuid(),
-            lote_id: loteId,
-            quantidade_agua_ml: ml,
-            data_hora: now(),
-            tipo_acionamento: tipo
-          };
-          set(s => ({ historicoIrrigacao: [novoRegistro, ...s.historicoIrrigacao] }));
-          const lote = get().lotes.find(l => l.id === loteId);
-          get().addLog('sistema', `Irrigação manual de ${ml}ml registrada para o lote de ${lote?.tipoCultura || '?'}`);
+          if (USE_BACKEND) {
+            await apiService.registrarIrrigacao(loteId, ml, tipo);
+          }
+          
+          set(s => {
+            const loteRegado = s.lotes.find(l => l.id === loteId);
+            let novasEstufas = s.estufas;
+            if (loteRegado && loteRegado.estufaId) {
+              novasEstufas = s.estufas.map(e => {
+                if (e.id === loteRegado.estufaId) {
+                  const aumento = (ml / 100) * 2; 
+                  return { ...e, nivelAgua: Math.min(100, (e.nivelAgua || 0) + aumento) };
+                }
+                return e;
+              });
+            }
+            const novoRegistro: RegistroIrrigacao = { id: uuid(), lote_id: loteId, quantidade_agua_ml: ml, data_hora: now(), tipo_acionamento: tipo };
+            return { historicoIrrigacao: [novoRegistro, ...s.historicoIrrigacao], estufas: novasEstufas };
+          });
         } finally {
           set({ isLoading: false });
         }
@@ -286,32 +262,45 @@ export const useAppStore = create<AppStore>()(
         }
       },
 
-      // ── Filtros ─────────────────────────────
       filtroStatus: 'Todos',
       filtroCultura: 'Todas',
       setFiltroStatus: (f) => set({ filtroStatus: f }),
       setFiltroCultura: (f) => set({ filtroCultura: f }),
 
-      // ── Estufas ─────────────────────────────
       estufas: ESTUFAS_INICIAIS,
 
-      // ── Insumos ─────────────────────────────
+      // ── CONEXÃO COM A NASA/EMBRAPA + IA (Pronto para o Enzo) ──
+      sincronizarSensoresSatelite: async (estufaId, lat, lon) => {
+        set({ isLoading: true });
+        try {
+          if (USE_BACKEND) {
+            // Puxa a resposta processada pelo Java do Enzo (NASA + SATveg + LLM)
+            const dadosProcessados = await apiService.analisarTerreno(estufaId, { latitude: lat, longitude: lon });
+            
+            set(s => ({
+              estufas: s.estufas.map(e => e.id === estufaId ? { 
+                ...e, 
+                temperatura: dadosProcessados.temperatura,
+                nivelAgua: dadosProcessados.umidadeSolo,
+                luminosidade: dadosProcessados.indiceUV,
+                co2: dadosProcessados.co2Atm
+              } : e)
+            }));
+          }
+        } catch (error) {
+          console.error("Erro na sincronização de satélites do backend:", error);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
       insumos: INSUMOS_INICIAIS,
 
       addInsumo: async (insumo) => {
         set({ isLoading: true });
         try {
-          const newInsumo: Insumo = {
-            ...insumo,
-            id: uuid(),
-            categoria: insumo.categoria || insumo.tipo || 'Semente',
-            tipo: insumo.tipo || insumo.categoria || 'Semente',
-            minimo: insumo.minimo !== undefined ? insumo.minimo : (insumo.quantidadeMinima !== undefined ? insumo.quantidadeMinima : 10),
-            quantidadeMinima: insumo.quantidadeMinima !== undefined ? insumo.quantidadeMinima : (insumo.minimo !== undefined ? insumo.minimo : 10),
-            atualizadoEm: now()
-          };
+          const newInsumo: Insumo = { ...insumo, id: uuid(), categoria: insumo.tipo || 'Semente', tipo: insumo.tipo || 'Semente', minimo: insumo.quantidadeMinima || 10, quantidadeMinima: insumo.quantidadeMinima || 10, atualizadoEm: now() };
           set(s => ({ insumos: [newInsumo, ...s.insumos] }));
-          get().addLog('criacao', `Insumo "${insumo.nome}" adicionado ao estoque`);
         } finally {
           set({ isLoading: false });
         }
@@ -321,20 +310,8 @@ export const useAppStore = create<AppStore>()(
         set({ isLoading: true });
         try {
           set(s => ({
-            insumos: s.insumos.map(i => {
-              if (i.id === id) {
-                const combined = { ...i, ...updates, atualizadoEm: now() };
-                if (updates.tipo) combined.categoria = updates.tipo;
-                if (updates.categoria) combined.tipo = updates.categoria;
-                if (updates.quantidadeMinima !== undefined) combined.minimo = updates.quantidadeMinima;
-                if (updates.minimo !== undefined) combined.quantidadeMinima = updates.minimo;
-                return combined;
-              }
-              return i;
-            }),
+            insumos: s.insumos.map(i => i.id === id ? { ...i, ...updates, atualizadoEm: now() } : i),
           }));
-          const insumo = get().insumos.find(i => i.id === id);
-          get().addLog('edicao', `Insumo "${insumo?.nome || '?'}" atualizado no estoque`);
         } finally {
           set({ isLoading: false });
         }
@@ -343,15 +320,12 @@ export const useAppStore = create<AppStore>()(
       deleteInsumo: async (id) => {
         set({ isLoading: true });
         try {
-          const insumo = get().insumos.find(i => i.id === id);
           set(s => ({ insumos: s.insumos.filter(i => i.id !== id) }));
-          get().addLog('exclusao', `Insumo "${insumo?.nome || '?'}" removido do estoque`);
         } finally {
           set({ isLoading: false });
         }
       },
 
-      // ── Colheitas ───────────────────────────
       colheitas: COLHEITAS_INICIAIS,
 
       addColheita: async (colheita) => {
@@ -359,28 +333,19 @@ export const useAppStore = create<AppStore>()(
         try {
           const newColheita: Colheita = { ...colheita, id: uuid() };
           set(s => ({ colheitas: [...s.colheitas, newColheita] }));
-          get().addLog('colheita', `Colheita registrada: ${colheita.quantidadeKg}kg de ${colheita.tipoCultura}`);
         } finally {
           set({ isLoading: false });
         }
       },
 
-      // ── Logs ────────────────────────────────
       logs: LOGS_INICIAIS,
 
       addLog: (tipo, mensagem) => {
         const user = get().currentUser;
-        const newLog: LogAtividade = {
-          id: uuid(),
-          tipo,
-          mensagem,
-          usuario: user?.nome || 'Sistema',
-          timestamp: now(),
-        };
+        const newLog: LogAtividade = { id: uuid(), tipo, mensagem, usuario: user?.nome || 'Sistema', timestamp: now() };
         set(s => ({ logs: [newLog, ...s.logs] }));
       },
 
-      // ── Tarefas ─────────────────────────────
       tarefas: TAREFAS_INICIAIS,
 
       addTarefa: async (tarefa) => {
@@ -388,7 +353,6 @@ export const useAppStore = create<AppStore>()(
         try {
           const newTarefa: Tarefa = { ...tarefa, id: uuid(), criadaEm: now(), concluida: false };
           set(s => ({ tarefas: [...s.tarefas, newTarefa] }));
-          get().addLog('criacao', `Tarefa "${tarefa.titulo}" agendada para ${new Date(tarefa.dataAgendada).toLocaleDateString('pt-BR')}`);
         } finally {
           set({ isLoading: false });
         }
@@ -408,47 +372,26 @@ export const useAppStore = create<AppStore>()(
       deleteTarefa: async (id) => {
         set({ isLoading: true });
         try {
-          const tarefa = get().tarefas.find(t => t.id === id);
           set(s => ({ tarefas: s.tarefas.filter(t => t.id !== id) }));
-          get().addLog('exclusao', `Tarefa "${tarefa?.titulo || '?'}" removida`);
         } finally {
           set({ isLoading: false });
         }
       },
 
-      // ── Eventos Críticos ────────────────────
       eventoCritico: null,
 
       simularEvento: () => {
-        const eventos: Array<{ tipo: TipoEvento; titulo: string; descricao: string }> = [
+        const eventos = [
           { tipo: 'falta_energia', titulo: '🛰️ Alerta de Satélite: Chuva Extrema', descricao: 'Imagens de satélite indicam tempestade severa se aproximando da Estufa Beta. Risco de alagamento.' },
           { tipo: 'praga_detectada', titulo: '🛰️ Satélite: Anomalia Foliar', descricao: 'Análise espectral detectou perda de vigor vegetativo nas culturas. Possível ataque de pragas.' },
           { tipo: 'falha_irrigacao', titulo: '💧 Falha no Sistema de Irrigação', descricao: 'Bomba principal da Estufa Alfa apresentou falha. Irrigação de emergência ativada.' },
-          { tipo: 'surto_temperatura', titulo: '🌡️ Surto de Temperatura', descricao: 'Temperatura da Estufa Gama subiu para 42°C. Ventilação de emergência em operação.' },
-          { tipo: 'contaminacao', titulo: '🦠 Alerta de Contaminação', descricao: 'Possível contaminação fúngica detectada na Estufa Delta. Quarentena automática iniciada.' },
         ];
-
         const evento = eventos[Math.floor(Math.random() * eventos.length)];
-        const ec: EventoCritico = {
-          id: uuid(),
-          ...evento,
-          severidade: Math.random() > 0.5 ? 'Crítica' : 'Alta',
-          estufasAfetadas: ['Estufa Alfa', 'Estufa Beta'].slice(0, Math.ceil(Math.random() * 2)),
-          timestamp: now(),
-          resolvido: false,
-        };
-
+        const ec: EventoCritico = { id: uuid(), ...evento, severidade: 'Crítica', estufasAfetadas: ['Estufa Alfa', 'Estufa Beta'], timestamp: now(), resolvido: false };
         set({ eventoCritico: ec });
-        get().addLog('alerta', `EVENTO CRÍTICO: ${evento.titulo} — ${evento.descricao.slice(0, 60)}...`);
       },
 
-      resolverEvento: () => {
-        const ev = get().eventoCritico;
-        if (ev) {
-          get().addLog('sistema', `Evento "${ev.titulo}" resolvido pelo operador`);
-        }
-        set({ eventoCritico: null });
-      },
+      resolverEvento: () => set({ eventoCritico: null }),
     }),
     {
       name: 'terranova-storage',
