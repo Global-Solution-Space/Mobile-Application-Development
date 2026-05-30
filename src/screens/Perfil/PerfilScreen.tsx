@@ -7,7 +7,14 @@ import { useAppStore } from '../../store/useAppStore';
 
 export function PerfilScreen() {
   const navigation = useNavigation() as any;
-  const { currentUser, lotes, estufas } = useAppStore() as any;
+  
+  const { currentUser, lotes, estufas, colheitas, logout } = useAppStore() as any;
+
+  const totalKg = colheitas.reduce((soma: number, c: any) => soma + c.quantidadeKg, 0);
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -16,15 +23,17 @@ export function PerfilScreen() {
         <View style={styles.avatarBox}>
           <FontAwesome5 name="user" size={32} color={Colors.accent} />
         </View>
-        <Text style={styles.userName}>{currentUser.nome}</Text>
+        <Text style={styles.userName}>{currentUser?.nome}</Text>
         <View style={styles.roleBadge}>
-          <Text style={styles.roleText}>Engenheira de Cultivo</Text>
+          <Text style={styles.roleText}>Produtor(a) Chefe</Text>
         </View>
         
         <View style={styles.tagsRow}>
-          <View style={styles.tag}><Text style={styles.tagText}>{currentUser.base}</Text></View>
-          <View style={styles.tag}><Text style={styles.tagText}>Hidroponia</Text></View>
-          <View style={styles.tag}><Text style={styles.tagText}>Nível 3</Text></View>
+          <View style={styles.tag}>
+            <Text style={styles.tagText}>{currentUser?.base || 'Sede Terra Nova'}</Text>
+          </View>
+          <View style={styles.tag}><Text style={styles.tagText}>Cultivo Sustentável</Text></View>
+          <View style={styles.tag}><Text style={styles.tagText}>Acesso Padrão</Text></View>
         </View>
 
         <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('EditarPerfil')}>
@@ -40,7 +49,7 @@ export function PerfilScreen() {
           <Text style={styles.statLabel}>Lotes ativos</Text>
         </View>
         <View style={styles.statBox}>
-          <Text style={styles.statNum}>0</Text>
+          <Text style={styles.statNum}>{totalKg.toFixed(1)}</Text>
           <Text style={styles.statLabel}>Kg Colhidos</Text>
         </View>
         <View style={styles.statBox}>
@@ -55,7 +64,7 @@ export function PerfilScreen() {
         <View style={styles.infoRow}>
           <FontAwesome5 name="envelope" size={14} color={Colors.textMuted} style={styles.infoIcon} />
           <Text style={styles.infoLabel}>E-mail</Text>
-          <Text style={styles.infoValue}>{currentUser.email}</Text>
+          <Text style={styles.infoValue}>{currentUser?.email}</Text>
         </View>
         <View style={styles.infoRow}>
           <FontAwesome5 name="id-badge" size={14} color={Colors.textMuted} style={styles.infoIcon} />
@@ -65,22 +74,41 @@ export function PerfilScreen() {
         <View style={styles.infoRow}>
           <FontAwesome5 name="calendar-alt" size={14} color={Colors.textMuted} style={styles.infoIcon} />
           <Text style={styles.infoLabel}>Membro desde</Text>
-          <Text style={styles.infoValue}>{currentUser.criadoEm}</Text>
+          <Text style={styles.infoValue}>
+            {currentUser?.criadoEm ? new Date(currentUser.criadoEm).toLocaleDateString('pt-BR') : ''}
+          </Text>
         </View>
       </View>
 
       {/* CONFIGURAÇÕES E SUPORTE */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>CONFIGURAÇÕES E SUPORTE</Text>
-        {['Alertas da Estufa', 'Manual de Cultivo (FAQ)', 'Suporte da Base', 'Sobre o Terra Nova'].map((item, index) => (
-          <TouchableOpacity key={index} style={styles.menuRow}>
-            <Text style={styles.menuText}>{item}</Text>
-            <FontAwesome5 name="chevron-right" size={12} color={Colors.accent} />
-          </TouchableOpacity>
-        ))}
+        
+       {/* Substitua o botão antigo por este: */}
+<TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('Alertas')}>
+  <Text style={styles.menuText}>Alertas da Estufa</Text>
+  <FontAwesome5 name="chevron-right" size={12} color={Colors.accent} />
+</TouchableOpacity>
+
+        {/* 👇 AQUI ESTÁ O LINK CORRIGIDO PARA O FAQ 👇 */}
+        <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('Faq')}>
+          <Text style={styles.menuText}>Manual de Cultivo (FAQ)</Text>
+          <FontAwesome5 name="chevron-right" size={12} color={Colors.accent} />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('Suporte')}>
+  <Text style={styles.menuText}>Suporte da Base</Text>
+  <FontAwesome5 name="chevron-right" size={12} color={Colors.accent} />
+</TouchableOpacity>
+
+        {/* 👇 AQUI ESTÁ O LINK PARA O SOBRE 👇 */}
+        <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('Sobre')}>
+          <Text style={styles.menuText}>Sobre o Terra Nova</Text>
+          <FontAwesome5 name="chevron-right" size={12} color={Colors.accent} />
+        </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.logoutBtn}>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.7}>
         <FontAwesome5 name="sign-out-alt" size={14} color={Colors.danger} />
         <Text style={styles.logoutText}>Sair da conta</Text>
       </TouchableOpacity>
