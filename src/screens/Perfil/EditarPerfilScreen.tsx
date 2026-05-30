@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, KeyboardAvoidingView, Platform, Alert,
+  TouchableOpacity, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -13,7 +13,7 @@ export function EditarPerfilScreen() {
   const { currentUser, updateProfile } = useAppStore() as any;
 
   const [nome, setNome]                     = useState(currentUser.nome);
-  const [base, setBase]                     = useState(currentUser.base);
+  const [base, setBase]                     = useState(currentUser.base || '');
   const [novoEmail, setNovoEmail]           = useState('');
   const [novaSenha, setNovaSenha]           = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
@@ -47,18 +47,15 @@ export function EditarPerfilScreen() {
     const updates: Record<string, string> = { nome, base };
     if (novoEmail) updates.email = novoEmail;
 
+    // Atualiza os dados no banco de dados global
     updateProfile(updates);
 
-    Alert.alert(
-      '✅ Perfil atualizado!',
-      'Suas informações foram salvas com sucesso.',
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
+    // Na Web, o Alert do React Native bloqueia a navegação. 
+    // Por isso, acionamos a saída da tela imediatamente!
+    if (Platform.OS === 'web') {
+        window.alert('✅ Perfil atualizado com sucesso!');
+    }
+    navigation.goBack();
   };
 
   return (
