@@ -1,4 +1,4 @@
-package com.anonymous.sidonia
+package com.anonymous.terranova
 
 import android.os.Build
 import android.os.Bundle

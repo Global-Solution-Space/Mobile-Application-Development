@@ -1,4 +1,4 @@
-package com.anonymous.sidonia
+package com.anonymous.terranova
 
 import android.app.Application
 import android.content.res.Configuration
