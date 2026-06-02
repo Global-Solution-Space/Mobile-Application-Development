@@ -1,13 +1,9 @@
-// ═══════════════════════════════════════════════════════════════
-// Terra Nova — Dashboard de Monitorização
-// Exibe alertas, métricas das estufas, e simulador de eventos
-// ═══════════════════════════════════════════════════════════════
-
 import React from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { Header } from '../../components/Header';
 import { Colors } from '../../theme/colors';
 import { useAppStore } from '../../store/useAppStore';
@@ -15,6 +11,7 @@ import { useAppStore } from '../../store/useAppStore';
 const { width } = Dimensions.get('window');
 
 export function HomeScreen() {
+  const navigation = useNavigation<any>();
   const {
     estufas, lotes, insumos, tarefas, colheitas,
     eventoCritico, simularEvento, resolverEvento,
@@ -34,13 +31,21 @@ export function HomeScreen() {
       <Header title="Dashboard" />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         
-        {/* ── Saudação ─── */}
         <View style={styles.greetingContainer}>
-          <Text style={styles.greeting}>Olá, {currentUser?.nome || 'Produtor'} 👨‍🚀</Text>
-          <Text style={styles.greetingSub}>Monitorização geral das estufas</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.greeting}>Olá, {currentUser?.nome || 'Produtor'} 👨‍🚀</Text>
+            <Text style={styles.greetingSub}>Monitorização geral das estufas</Text>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.quickTaskBtn}
+            onPress={() => navigation.navigate('Tarefas')}
+            activeOpacity={0.8}
+          >
+            <FontAwesome5 name="list-ul" size={18} color="#0A1F16" />
+          </TouchableOpacity>
         </View>
 
-        {/* ── Evento Crítico / Simulador ─── */}
         {eventoCritico ? (
           <View style={styles.criticalCard}>
             <View style={styles.criticalHeader}>
@@ -68,15 +73,14 @@ export function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* ── KPIs Grid ─── */}
         <View style={styles.kpiGrid}>
           <View style={[styles.kpiCard, { borderLeftColor: Colors.accent }]}>
             <FontAwesome5 name="leaf" size={18} color={Colors.accent} />
             <Text style={styles.kpiValue}>{lotesAtivos}</Text>
             <Text style={styles.kpiLabel}>Lotes Ativos</Text>
           </View>
-          <View style={[styles.kpiCard, { borderLeftColor: Colors.info }]}>
-            <FontAwesome5 name="warehouse" size={18} color={Colors.info} />
+          <View style={[styles.kpiCard, { borderLeftColor: '#10B981' }]}>
+            <FontAwesome5 name="warehouse" size={18} color="#10B981" />
             <Text style={styles.kpiValue}>{estufasOp}/{estufas.length}</Text>
             <Text style={styles.kpiLabel}>Estufas Ativas</Text>
           </View>
@@ -92,13 +96,13 @@ export function HomeScreen() {
           </View>
         </View>
 
-        {/* ── Métricas Resumo ─── */}
         <View style={styles.metricsRow}>
           <View style={styles.metricCard}>
             <FontAwesome5 name="weight-hanging" size={14} color={Colors.accent} />
             <Text style={styles.metricValue}>{totalColhidoKg.toFixed(1)} kg</Text>
             <Text style={styles.metricLabel}>Total Colhido</Text>
           </View>
+          
           <View style={styles.metricCard}>
             <FontAwesome5 name="boxes" size={14} color={insumosAbaixo > 0 ? Colors.warning : Colors.accent} />
             <Text style={[styles.metricValue, insumosAbaixo > 0 && { color: Colors.warning }]}>
@@ -106,14 +110,18 @@ export function HomeScreen() {
             </Text>
             <Text style={styles.metricLabel}>Insumos Baixos</Text>
           </View>
-          <View style={styles.metricCard}>
-            <FontAwesome5 name="tasks" size={14} color={Colors.info} />
+          
+          <TouchableOpacity 
+            style={styles.metricCard} 
+            onPress={() => navigation.navigate('Tarefas')}
+            activeOpacity={0.7}
+          >
+            <FontAwesome5 name="tasks" size={14} color="#10B981" />
             <Text style={styles.metricValue}>{tarefasPendentes}</Text>
             <Text style={styles.metricLabel}>Tarefas Pend.</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
-        {/* ── Monitor de Estufas ─── */}
         <Text style={styles.sectionTitle}>
           <FontAwesome5 name="broadcast-tower" size={14} color={Colors.accent} />
           {'  '}Monitor de Estufas
@@ -175,7 +183,6 @@ export function HomeScreen() {
   );
 }
 
-// ── Componente auxiliar de sensor ───
 function SensorItem({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
   return (
     <View style={styles.sensorItem}>
@@ -190,19 +197,20 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bgPrimary },
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 100 },
-
-  greetingContainer: { marginBottom: 16 },
+  greetingContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   greeting: { fontSize: 22, fontWeight: 'bold', color: Colors.textPrimary },
   greetingSub: { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
-
-  // Evento Crítico & Botão Topo
+  quickTaskBtn: {
+    width: 46, height: 46, borderRadius: 23,
+    backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: '#ffffff22'
+  },
   simBtnTop: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     backgroundColor: Colors.danger, borderRadius: 12, height: 50, gap: 10,
     marginBottom: 20,
   },
   simBtnText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
-  
   criticalCard: {
     backgroundColor: Colors.criticalBg,
     borderRadius: 14,
@@ -224,8 +232,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent, borderRadius: 10, height: 42, gap: 8,
   },
   resolveBtnText: { fontSize: 14, fontWeight: '700', color: Colors.bgPrimary },
-
-  // KPIs
   kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
   kpiCard: {
     flex: 1, minWidth: (width - 52) / 2,
@@ -237,8 +243,6 @@ const styles = StyleSheet.create({
   },
   kpiValue: { fontSize: 24, fontWeight: 'bold', color: Colors.textPrimary },
   kpiLabel: { fontSize: 11, color: Colors.textSecondary },
-
-  // Métricas
   metricsRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
   metricCard: {
     flex: 1, backgroundColor: Colors.bgSecondary,
@@ -248,11 +252,7 @@ const styles = StyleSheet.create({
   },
   metricValue: { fontSize: 18, fontWeight: 'bold', color: Colors.textPrimary },
   metricLabel: { fontSize: 10, color: Colors.textSecondary },
-
-  // Seção
   sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 14 },
-
-  // Estufa Card
   estufaCard: {
     backgroundColor: Colors.bgSecondary,
     borderRadius: 14, padding: 16,
@@ -267,14 +267,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accentGlow, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6,
   },
   estufaTypeText: { fontSize: 11, color: Colors.accent, fontWeight: '600' },
-
-  // Sensores
   sensorsGrid: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 14 },
   sensorItem: { alignItems: 'center', gap: 3 },
   sensorValue: { fontSize: 13, fontWeight: '700' },
   sensorLabel: { fontSize: 10, color: Colors.textMuted },
-
-  // Barra de ocupação
   barContainer: { marginTop: 4 },
   barLabel: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   barLabelText: { fontSize: 11, color: Colors.textMuted },

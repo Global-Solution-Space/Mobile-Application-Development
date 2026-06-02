@@ -30,6 +30,7 @@
   "private": true,
   "devDependencies": {
     "@types/react": "^19.2.15",
+    "babel-preset-expo": "^56.0.14",
     "eslint-config-expo": "~55.0.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",

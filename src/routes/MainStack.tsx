@@ -12,8 +12,8 @@ import { TarefasScreen }      from '../screens/Tarefas/TarefasScreen';
 import { EditarPerfilScreen } from '../screens/Perfil/EditarPerfilScreen';
 import { FaqScreen }          from '../screens/Faq/FaqScreen';
 import { SobreScreen }        from '../screens/Sobre/SobreScreen';
-import { AlertasScreen } from '../screens/Alertas/AlertasScreen';
-import { SuporteScreen } from '../screens/Suporte/SuporteScreen';
+import { AlertasScreen }      from '../screens/Alertas/AlertasScreen';
+import { SuporteScreen }      from '../screens/Suporte/SuporteScreen';
 
 const Stack = createNativeStackNavigator<any>();
 
@@ -37,8 +37,8 @@ export default function MainStack() {
           <Stack.Screen name="EditarPerfil" component={EditarPerfilScreen} />
           <Stack.Screen name="Faq"          component={FaqScreen} />
           <Stack.Screen name="Sobre"        component={SobreScreen} />
-          <Stack.Screen name="Alertas" component={AlertasScreen} />
-          <Stack.Screen name="Suporte" component={SuporteScreen} />
+          <Stack.Screen name="Alertas"      component={AlertasScreen} />
+          <Stack.Screen name="Suporte"      component={SuporteScreen} />
         </>
       )}
     </Stack.Navigator>
