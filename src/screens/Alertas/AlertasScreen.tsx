@@ -3,9 +3,10 @@
 // ═══════════════════════════════════════════════════════════════
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
+import { Header } from '../../components/Header';
 import { EmptyState } from '../../components/EmptyState';
 import { useAppStore } from '../../store/useAppStore';
 import { AlertaAgricola } from '../../types';
@@ -22,7 +23,14 @@ const severidadeIcon: Record<string, string> = {
   BAIXO: 'info-circle',
 };
 
-export function AlertasScreen({ navigation }: any) {
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types';
+
+interface AlertasScreenProps {
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Alertas'>;
+}
+
+export function AlertasScreen({ navigation }: AlertasScreenProps) {
   const { alertas, resolverEvento } = useAppStore();
   const [filter, setFilter] = useState<'Todos' | 'ALTO' | 'MEDIO' | 'BAIXO'>('Todos');
 
@@ -74,20 +82,15 @@ export function AlertasScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <FontAwesome5 name="arrow-left" size={18} color={Colors.accent} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Central de Alertas</Text>
-      </View>
+      <Header title="Central de Alertas" showBackButton />
 
       <View style={styles.toolbar}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-          {['Todos', 'ALTO', 'MEDIO', 'BAIXO'].map(f => (
+          {(['Todos', 'ALTO', 'MEDIO', 'BAIXO'] as const).map(f => (
             <TouchableOpacity
               key={f}
               style={[styles.filterChip, filter === f && styles.filterChipActive]}
-              onPress={() => setFilter(f as any)}
+              onPress={() => setFilter(f)}
             >
               <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
                 {f}
@@ -108,18 +111,9 @@ export function AlertasScreen({ navigation }: any) {
   );
 }
 
-import { ScrollView } from 'react-native';
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bgPrimary },
-  header: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    paddingHorizontal: 16, paddingTop: 48, paddingBottom: 16,
-    backgroundColor: Colors.bgSecondary,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary },
 
   toolbar: { paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
   filterScroll: { flexGrow: 0 },
@@ -127,8 +121,6 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
   filterText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '600' },
   filterTextActive: { color: Colors.bgPrimary },
-
-
 
   list: { padding: 16, paddingBottom: 40 },
 

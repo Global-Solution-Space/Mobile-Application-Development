@@ -6,13 +6,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../theme/colors';
 import { useAppStore } from '../../store/useAppStore';
 
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types';
+
 export function PerfilScreen() {
-  const navigation = useNavigation() as any;
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   
-  const { currentUser, talhoes, propriedades, telefones, logout } = useAppStore() as any;
+  const { currentUser, talhoes, propriedades, telefones, logout } = useAppStore();
 
-  const phone = telefones.find((t: any) => t.idProdutor === currentUser?.id);
+  const phone = telefones.find((t) => t.idProdutor === currentUser?.id);
   const phoneFormatted = phone ? `(${phone.ddd}) ${phone.numero}` : 'Não cadastrado';
 
   const handleLogout = () => {

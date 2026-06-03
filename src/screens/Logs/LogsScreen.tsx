@@ -3,9 +3,10 @@
 // ═══════════════════════════════════════════════════════════════
 
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
+import { Header } from '../../components/Header';
 import { EmptyState } from '../../components/EmptyState';
 import { useAppStore } from '../../store/useAppStore';
 import { LogAtividade, TipoLog } from '../../types';
@@ -28,7 +29,14 @@ function timeAgo(ts: string) {
   return `${Math.floor(h / 24)}d atrás`;
 }
 
-export function LogsScreen({ navigation }: any) {
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types';
+
+interface LogsScreenProps {
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Logs'>;
+}
+
+export function LogsScreen({ navigation }: LogsScreenProps) {
   const { logs } = useAppStore();
 
   const renderItem = ({ item, index }: { item: LogAtividade; index: number }) => {
@@ -37,7 +45,7 @@ export function LogsScreen({ navigation }: any) {
       <View style={styles.logItem}>
         <View style={styles.timeline}>
           <View style={[styles.dot, { backgroundColor: cfg.color }]}>
-            <FontAwesome5 name={cfg.icon} size={10} color="#FFF" />
+            <FontAwesome5 name={cfg.icon} size={10} color={Colors.textPrimary} />
           </View>
           {index < logs.length - 1 && <View style={styles.line} />}
         </View>
@@ -57,16 +65,7 @@ export function LogsScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <FontAwesome5 name="arrow-left" size={18} color={Colors.accent} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Logs de Atividades</Text>
-        <View style={styles.live}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveText}>LIVE</Text>
-        </View>
-      </View>
+      <Header title="Logs de Atividades" showBackButton />
       <FlatList
         data={logs}
         keyExtractor={item => item.id}
@@ -82,18 +81,6 @@ export function LogsScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bgPrimary },
-  header: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    paddingHorizontal: 16, paddingTop: 48, paddingBottom: 16,
-    backgroundColor: Colors.bgSecondary, borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary, flex: 1 },
-  live: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: Colors.dangerBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12,
-  },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.danger },
-  liveText: { fontSize: 10, fontWeight: '800', color: Colors.danger, letterSpacing: 1 },
   list: { padding: 16, paddingBottom: 40 },
   logItem: { flexDirection: 'row', marginBottom: 4 },
   timeline: { width: 32, alignItems: 'center' },

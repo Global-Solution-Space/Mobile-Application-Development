@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService } from '../services/api';
 import {
   Produtor, Telefone, Localizacao, Propriedade, TipoPlantacao,
-  Talhao, AlertaAgricola, TipoLog, LogAtividade, SatVeg, NasaPower
+  Talhao, AlertaAgricola, TipoLog, LogAtividade, DadoTemporal, ReqApiPayload, Tarefa
 } from '../types';
 
 const uuid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
@@ -23,17 +23,17 @@ export interface AppStore {
   propriedades: Propriedade[];
   tiposPlantacao: TipoPlantacao[];
   talhoes: Talhao[];
+  tarefas: Tarefa[];
   alertas: AlertaAgricola[];
   logs: LogAtividade[];
-  satvegs: SatVeg[];
-  nasapowers: NasaPower[];
+  dadosTemporais: DadoTemporal[];
 
   // Initialization
   fetchInitialData: () => Promise<void>;
 
   // Auth
-  login: (email: string, senha?: string) => Promise<boolean>;
-  register: (nome: string, email: string, senha?: string, ddd?: string, numeroTelefone?: string) => Promise<boolean>;
+  login: (email: string, senha?: string) => Promise<{ success: boolean; errorType?: 'auth' | 'network' }>;
+  register: (nome: string, email: string, senha?: string, ddd?: string, numeroTelefone?: string) => Promise<{ success: boolean; errorType?: 'exists' | 'network' }>;
   logout: () => void;
   updateProfile: (updates: Partial<Produtor>, telefoneUpdates?: Partial<Telefone>) => Promise<void>;
 
@@ -47,12 +47,14 @@ export interface AppStore {
   addLocalizacao: (data: Omit<Localizacao, 'id' | '_links'>) => Promise<Localizacao | null>;
   addTipoPlantacao: (data: Omit<TipoPlantacao, 'id' | '_links'>) => Promise<TipoPlantacao | null>;
 
-  addSatVeg: (idTalhao: number) => Promise<SatVeg | null>;
-  deleteSatVeg: (id: number) => Promise<void>;
-  addNasaPower: (idTalhao: number, dataInicio: string, dataFim: string) => Promise<NasaPower | null>;
-  deleteNasaPower: (id: number) => Promise<void>;
+  requestApiAnalysis: (payload: ReqApiPayload) => Promise<boolean>;
+  fetchDadosTemporais: (idTalhao: number) => Promise<void>;
 
   resolverEvento: (id: number) => Promise<void>;
+  
+  addTarefa: (data: Omit<Tarefa, 'id'>) => void;
+  toggleTarefa: (id: string) => void;
+  deleteTarefa: (id: string) => void;
 }
 
 export const useAppStore = create<AppStore>()(
@@ -70,10 +72,10 @@ export const useAppStore = create<AppStore>()(
       propriedades: [],
       tiposPlantacao: [],
       talhoes: [],
+      tarefas: [],
       alertas: [],
       logs: [],
-      satvegs: [],
-      nasapowers: [],
+      dadosTemporais: [],
 
       addLog: (tipo, mensagem) => {
         const user = get().currentUser;
@@ -84,21 +86,37 @@ export const useAppStore = create<AppStore>()(
       fetchInitialData: async () => {
         set({ isLoading: true });
         try {
-          const produtores = await apiService.getProdutores();
-          const telefones = await apiService.getTelefones();
-          const localizacoes = await apiService.getLocalizacoes();
-          const propriedades = await apiService.getPropriedades();
-          const tiposPlantacao = await apiService.getTiposPlantacao();
-          const talhoes = await apiService.getTalhoes();
-          const alertas = await apiService.getAlertas();
-          const satvegs = await apiService.getSatVegs();
-          const nasapowers = await apiService.getNasaPowers();
-          set({
-            produtores, telefones, localizacoes, propriedades,
-            tiposPlantacao, talhoes, alertas, satvegs, nasapowers
-          });
+          const user = get().currentUser;
+          if (!user) {
+            set({ isLoading: false });
+            return;
+          }
+
+          // Busca os recursos rápidos e essenciais do usuário
+          const [propriedades, talhoes, alertas] = await Promise.all([
+            apiService.getPropriedadesDoProdutor(user.id),
+            apiService.getTalhoesDoProdutor(user.id),
+            apiService.getAlertasDoProdutor(user.id)
+          ]);
+
+          set({ propriedades, talhoes, alertas });
+
+          // Lazy Loading (Cache Inteligente): Carrega tabelas ausentes em paralelo
+          const state = get();
+          const cacheDependencies = [
+            { key: 'tiposPlantacao' as const, fetcher: apiService.getTiposPlantacao },
+            { key: 'localizacoes' as const, fetcher: apiService.getLocalizacoes },
+            { key: 'telefones' as const, fetcher: apiService.getTelefones }
+          ];
+
+          await Promise.all(
+            cacheDependencies
+              .filter(({ key }) => state[key].length === 0)
+              .map(({ key, fetcher }) => fetcher().then(data => set({ [key]: data } as Partial<AppStore>)))
+          );
         } catch (error) {
           console.error("Erro ao buscar dados iniciais:", error);
+          throw error;
         } finally {
           set({ isLoading: false });
         }
@@ -107,18 +125,24 @@ export const useAppStore = create<AppStore>()(
       login: async (email, senha) => {
         set({ isLoading: true });
         try {
-          await get().fetchInitialData(); // Ensure we have latest
-          const produtores = get().produtores;
+          // Otimização: Busca apenas os produtores para validar o login (Economiza ~1s de rede)
+          const produtores = await apiService.getProdutores();
           const user = produtores.find(u => u.email === email && (!senha || u.senha === senha));
           
           if (user) {
-            set({ currentUser: user, isLoggedIn: true });
+            set({ currentUser: user, isLoggedIn: true, produtores });
             get().addLog('sistema', `Produtor ${user.nome} fez login no sistema`);
-            return true;
+            // Busca os recursos pesados (Talhoes, Propriedades, Alertas) atrelados a este usuário
+            await get().fetchInitialData(); 
+            return { success: true };
           }
-          return false;
-        } catch (error) {
-          return false;
+          return { success: false, errorType: 'auth' };
+        } catch (error: any) {
+          if (error.response && error.response.status === 400) {
+            return { success: false, errorType: 'auth' };
+          }
+          console.warn("Login connection failed:", error.message);
+          return { success: false, errorType: 'network' };
         } finally {
           set({ isLoading: false });
         }
@@ -127,15 +151,12 @@ export const useAppStore = create<AppStore>()(
       register: async (nome, email, senha, ddd, numeroTelefone) => {
         set({ isLoading: true });
         try {
-          await get().fetchInitialData();
-          const exists = get().produtores.find(u => u.email === email);
-          if (exists) return false;
-
-          const novoProdutor = await apiService.createProdutor({ nome, email, senha });
-          
+          const payload: Parameters<typeof apiService.createProdutor>[0] = { nome, email, senha };
           if (ddd && numeroTelefone) {
-             await apiService.createTelefone({ ddd, numero: numeroTelefone, idProdutor: novoProdutor.id });
+            payload.telefone = { ddd, numero: numeroTelefone };
           }
+
+          const novoProdutor = await apiService.createProdutor(payload);
 
           set(s => ({
             produtores: [...s.produtores, novoProdutor],
@@ -144,11 +165,14 @@ export const useAppStore = create<AppStore>()(
           }));
           
           get().addLog('sistema', `Novo produtor ${nome} registrado no sistema`);
-          await get().fetchInitialData(); // Refresh to get the phone
-          return true;
-        } catch (error) {
-          console.error("Registration error", error);
-          return false;
+          await get().fetchInitialData(); // Sincroniza todos os dados do servidor
+          return { success: true };
+        } catch (error: any) {
+          if (error.response && error.response.status === 400) {
+            return { success: false, errorType: 'exists' };
+          }
+          console.warn("Registration connection failed:", error.message);
+          return { success: false, errorType: 'network' };
         } finally {
           set({ isLoading: false });
         }
@@ -171,21 +195,25 @@ export const useAppStore = create<AppStore>()(
           if (telefoneUpdates) {
              const telefone = get().telefones.find(t => t.idProdutor === user.id);
              if (telefone) {
-                await apiService.updateTelefone(telefone.id, telefoneUpdates);
+                const updatedTel = await apiService.updateTelefone(telefone.id, telefoneUpdates);
+                set(s => ({ telefones: s.telefones.map(t => t.id === telefone.id ? updatedTel : t) }));
              } else if (telefoneUpdates.ddd && telefoneUpdates.numero) {
-                await apiService.createTelefone({
+                const newTel = await apiService.createTelefone({
                    ddd: telefoneUpdates.ddd,
                    numero: telefoneUpdates.numero,
                    idProdutor: user.id
                 });
+                set(s => ({ telefones: [...s.telefones, newTel] }));
              }
           }
 
-          set({ currentUser: updatedProdutor });
-          await get().fetchInitialData(); // Refresh list
+          set(s => ({ 
+            currentUser: updatedProdutor,
+            produtores: s.produtores.map(p => p.id === updatedProdutor.id ? updatedProdutor : p)
+          }));
           get().addLog('edicao', `Produtor atualizou seu perfil`);
-        } catch (error) {
-          console.error("Update profile error", error);
+        } catch (error: any) {
+          console.warn("Update profile error:", error.message);
         } finally {
           set({ isLoading: false });
         }
@@ -194,11 +222,11 @@ export const useAppStore = create<AppStore>()(
       addTalhao: async (data) => {
         set({ isLoading: true });
         try {
-          await apiService.createTalhao(data);
+          const newTalhao = await apiService.createTalhao(data);
           get().addLog('criacao', `Novo talhão cadastrado`);
-          await get().fetchInitialData();
-        } catch (error) {
-          console.error("Add talhao error", error);
+          set(s => ({ talhoes: [...s.talhoes, newTalhao] }));
+        } catch (error: any) {
+          console.warn("Add talhao error:", error.message);
         } finally {
           set({ isLoading: false });
         }
@@ -207,10 +235,10 @@ export const useAppStore = create<AppStore>()(
       updateTalhao: async (id, updates) => {
         set({ isLoading: true });
         try {
-          await apiService.updateTalhao(id, updates);
-          await get().fetchInitialData();
-        } catch (error) {
-          console.error("Update talhao error", error);
+          const updated = await apiService.updateTalhao(id, updates);
+          set(s => ({ talhoes: s.talhoes.map(t => t.id === id ? updated : t) }));
+        } catch (error: any) {
+          console.warn("Update talhao error:", error.message);
         } finally {
           set({ isLoading: false });
         }
@@ -221,9 +249,9 @@ export const useAppStore = create<AppStore>()(
         try {
           await apiService.deleteTalhao(id);
           get().addLog('exclusao', `Talhão removido`);
-          await get().fetchInitialData();
-        } catch (error) {
-          console.error("Delete talhao error", error);
+          set(s => ({ talhoes: s.talhoes.filter(t => t.id !== id) }));
+        } catch (error: any) {
+          console.warn("Delete talhao error:", error.message);
         } finally {
           set({ isLoading: false });
         }
@@ -232,95 +260,90 @@ export const useAppStore = create<AppStore>()(
       addPropriedade: async (data) => {
         set({ isLoading: true });
         try {
-          await apiService.createPropriedade(data);
-          await get().fetchInitialData();
-        } catch(e) { console.error(e); } finally { set({ isLoading: false }); }
+          const res = await apiService.createPropriedade(data);
+          set(s => ({ propriedades: [...s.propriedades, res] }));
+        } catch(e: any) { console.warn(e.message); } finally { set({ isLoading: false }); }
       },
 
       addLocalizacao: async (data) => {
         set({ isLoading: true });
         try {
           const res = await apiService.createLocalizacao(data);
-          await get().fetchInitialData();
+          // Otimização: Adiciona ao cache local sem refazer download do banco inteiro
+          set(s => ({ localizacoes: [...s.localizacoes, res] }));
           return res;
-        } catch(e) { console.error(e); return null; } finally { set({ isLoading: false }); }
+        } catch(e: any) { console.warn(e.message); return null; } finally { set({ isLoading: false }); }
       },
 
       addTipoPlantacao: async (data) => {
         set({ isLoading: true });
         try {
           const res = await apiService.createTipoPlantacao(data);
-          await get().fetchInitialData();
+          // Otimização: Adiciona ao cache local
+          set(s => ({ tiposPlantacao: [...s.tiposPlantacao, res] }));
           return res;
-        } catch(e) { console.error(e); return null; } finally { set({ isLoading: false }); }
+        } catch(e: any) { console.warn(e.message); return null; } finally { set({ isLoading: false }); }
       },
 
       resolverEvento: async (id) => {
         set({ isLoading: true });
         try {
-          await apiService.updateAlerta(id, { resolvido: 'S' });
-          await get().fetchInitialData();
-        } catch (error) {
-          console.error("Resolver evento error", error);
+          const updated = await apiService.updateAlerta(id, { resolvido: 'S' });
+          set(s => ({ alertas: s.alertas.map(a => a.id === id ? updated : a) }));
+        } catch (error: any) {
+          console.warn("Resolver evento error:", error.message);
         } finally {
           set({ isLoading: false });
         }
       },
 
-      addSatVeg: async (idTalhao) => {
+      requestApiAnalysis: async (payload) => {
         set({ isLoading: true });
         try {
-          const res = await apiService.createSatVeg({ idTalhao });
-          await get().fetchInitialData();
-          get().addLog('sistema', `Nova análise SATveg iniciada para talhão #${idTalhao}`);
-          return res;
-        } catch (error) {
-          console.error("Add SatVeg error", error);
-          return null;
+          await apiService.createReqApi(payload);
+          await get().fetchDadosTemporais(payload.idTalhao);
+          get().addLog('sistema', `Nova análise ${payload.tipoParam} iniciada para talhão #${payload.idTalhao}`);
+          return true;
+        } catch (error: any) {
+          console.warn("ReqApi error:", error.message);
+          return false;
         } finally {
           set({ isLoading: false });
         }
       },
 
-      deleteSatVeg: async (id) => {
+      fetchDadosTemporais: async (idTalhao) => {
         set({ isLoading: true });
         try {
-          await apiService.deleteSatVeg(id);
-          await get().fetchInitialData();
-          get().addLog('exclusao', `Análise SATveg removida`);
-        } catch (error) {
-          console.error("Delete SatVeg error", error);
+          const dados = await apiService.getDadosTemporais(idTalhao);
+          set({ dadosTemporais: dados });
+        } catch (error: any) {
+          console.warn("Fetch Dados Temporais error:", error.message);
         } finally {
           set({ isLoading: false });
         }
       },
 
-      addNasaPower: async (idTalhao, dataInicio, dataFim) => {
-        set({ isLoading: true });
-        try {
-          const res = await apiService.createNasaPower({ idTalhao, dataInicio, dataFim });
-          await get().fetchInitialData();
-          get().addLog('sistema', `Nova análise NASA Power iniciada para talhão #${idTalhao}`);
-          return res;
-        } catch (error) {
-          console.error("Add NasaPower error", error);
-          return null;
-        } finally {
-          set({ isLoading: false });
-        }
+      addTarefa: (data) => {
+        const newTarefa: Tarefa = {
+          ...data,
+          id: Date.now().toString(),
+        };
+        set(state => ({ tarefas: [...state.tarefas, newTarefa] }));
       },
 
-      deleteNasaPower: async (id) => {
-        set({ isLoading: true });
-        try {
-          await apiService.deleteNasaPower(id);
-          await get().fetchInitialData();
-          get().addLog('exclusao', `Análise NASA Power removida`);
-        } catch (error) {
-          console.error("Delete NasaPower error", error);
-        } finally {
-          set({ isLoading: false });
-        }
+      toggleTarefa: (id) => {
+        set(state => ({
+          tarefas: state.tarefas.map(t =>
+            t.id === id ? { ...t, concluida: !t.concluida } : t
+          )
+        }));
+      },
+
+      deleteTarefa: (id) => {
+        set(state => ({
+          tarefas: state.tarefas.filter(t => t.id !== id)
+        }));
       }
 
     }),
@@ -332,6 +355,7 @@ export const useAppStore = create<AppStore>()(
         currentUser: state.currentUser,
         isLoggedIn: state.isLoggedIn,
         logs: state.logs,
+        tarefas: state.tarefas,
       }),
       onRehydrateStorage: () => (state) => {
         // Quando o AsyncStorage terminar de carregar os dados salvos:

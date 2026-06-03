@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { useAppStore } from '../../store/useAppStore';
+import { PropriedadeSchema } from '../../schemas';
+import { ValidationError } from '../../components/ValidationError';
 
 interface ModalPropriedadeProps {
   visible: boolean;
@@ -15,38 +17,42 @@ export function ModalPropriedade({ visible, onClose }: ModalPropriedadeProps) {
   const [novaPropTamanho, setNovaPropTamanho] = useState('');
   const [novaPropLat, setNovaPropLat] = useState('');
   const [novaPropLon, setNovaPropLon] = useState('');
+  const [erro, setErro] = useState('');
 
   const handleSaveProp = async () => {
-    if (!novaPropNome.trim() || !novaPropTamanho.trim() || !novaPropLat.trim() || !novaPropLon.trim()) {
-      Alert.alert('Erro', 'Preencha todos os campos da Propriedade.');
-      return;
-    }
-    const latitude = parseFloat(novaPropLat);
-    const longitude = parseFloat(novaPropLon);
-
-    if (isNaN(latitude) || isNaN(longitude)) {
-      Alert.alert('Erro', 'Latitude e Longitude devem ser numéricos.');
-      return;
-    }
-
+    setErro('');
     if (!currentUser) {
-      Alert.alert('Erro', 'Produtor não autenticado.');
+      setErro('Produtor não autenticado.');
       return;
     }
 
-    let locId = localizacoes.find(l => l.locLatitude === latitude && l.locLongitude === longitude)?.id;
+    const validation = PropriedadeSchema.safeParse({
+      nome: novaPropNome,
+      tamanhoTotal: novaPropTamanho,
+      locLatitude: novaPropLat,
+      locLongitude: novaPropLon
+    });
+
+    if (!validation.success) {
+      setErro(validation.error.issues[0].message);
+      return;
+    }
+
+    const { nome, tamanhoTotal, locLatitude, locLongitude } = validation.data;
+
+    let locId = localizacoes.find(l => l.locLatitude === locLatitude && l.locLongitude === locLongitude)?.id;
     if (!locId) {
-      const novaLoc = await addLocalizacao({ locLatitude: latitude, locLongitude: longitude });
+      const novaLoc = await addLocalizacao({ locLatitude, locLongitude });
       if (!novaLoc) {
-        Alert.alert('Erro', 'Erro ao cadastrar localização.');
+        setErro('Erro ao cadastrar localização.');
         return;
       }
       locId = novaLoc.id;
     }
 
     await addPropriedade({
-      nome: novaPropNome.trim(),
-      tamanhoTotal: parseFloat(novaPropTamanho),
+      nome,
+      tamanhoTotal,
       idProdutor: currentUser.id,
       idLocalizacao: locId,
     });
@@ -94,6 +100,8 @@ export function ModalPropriedade({ visible, onClose }: ModalPropriedadeProps) {
                 <TextInput style={styles.input} value={novaPropLon} onChangeText={setNovaPropLon} keyboardType="numeric" placeholderTextColor={Colors.textMuted} />
               </View>
             </View>
+
+            <ValidationError message={erro} />
 
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancel} onPress={onClose}>

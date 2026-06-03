@@ -5,18 +5,27 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ScrollView, TextInput, Alert
+  ScrollView, Alert
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
 import { EmptyState } from '../../components/EmptyState';
 import { SelectChip } from '../../components/SelectChip';
+import { FormInput } from '../../components/FormInput';
+import { PrimaryButton } from '../../components/PrimaryButton';
 import { Colors } from '../../theme/colors';
 import { useAppStore } from '../../store/useAppStore';
-import { Talhao } from '../../types';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList, Talhao } from '../../types';
 import { StatusBadge } from '../../components/StatusBadge';
+import { TalhaoSchema } from '../../schemas';
+import { ValidationError } from '../../components/ValidationError';
 
-export function TalhoesScreen({ navigation }: any) {
+interface TalhoesScreenProps {
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Tabs'>;
+}
+
+export function TalhoesScreen({ navigation }: TalhoesScreenProps) {
   const {
     talhoes, deleteTalhao, updateTalhao, propriedades, tiposPlantacao, localizacoes, addLocalizacao
   } = useAppStore();
@@ -32,6 +41,7 @@ export function TalhoesScreen({ navigation }: any) {
   const [editLon, setEditLon] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<number | 'Todos'>('Todos');
   const [filtroProp, setFiltroProp] = useState<number | 'Todas'>('Todas');
+  const [editErro, setEditErro] = useState('');
 
   const filtered = talhoes.filter(t => {
     if (filtroTipo !== 'Todos' && t.idTipoPlantacao !== filtroTipo) return false;
@@ -56,23 +66,29 @@ export function TalhoesScreen({ navigation }: any) {
   };
 
   const saveEdit = async () => {
-    if (!editTalhao || !editTipoId || !editPropId) {
-      Alert.alert('Erro', 'Preencha todos os campos obrigatórios.');
+    if (!editTalhao) return;
+    setEditErro('');
+
+    const validation = TalhaoSchema.safeParse({
+      nomeTalhao: editNome,
+      volumArea: editArea,
+      locLatitude: editLat,
+      locLongitude: editLon,
+      idTipoPlantacao: editTipoId,
+      idPropriedade: editPropId
+    });
+
+    if (!validation.success) {
+      setEditErro(validation.error.issues[0].message);
       return;
     }
 
-    const latitude = parseFloat(editLat);
-    const longitude = parseFloat(editLon);
+    const { nomeTalhao, volumArea, locLatitude, locLongitude, idTipoPlantacao, idPropriedade } = validation.data;
 
-    if (isNaN(latitude) || isNaN(longitude)) {
-      Alert.alert('Erro', 'Latitude e Longitude devem ser numéricos.');
-      return;
-    }
-
-    let finalLocId = localizacoes.find(l => l.locLatitude === latitude && l.locLongitude === longitude)?.id;
+    let finalLocId = localizacoes.find(l => l.locLatitude === locLatitude && l.locLongitude === locLongitude)?.id;
 
     if (!finalLocId) {
-      const newLoc = await addLocalizacao({ locLatitude: latitude, locLongitude: longitude });
+      const newLoc = await addLocalizacao({ locLatitude, locLongitude });
       if (!newLoc) {
         Alert.alert('Erro', 'Não foi possível cadastrar a nova localização.');
         return;
@@ -81,10 +97,10 @@ export function TalhoesScreen({ navigation }: any) {
     }
 
     await updateTalhao(editTalhao.id, {
-      nomeTalhao: editNome.trim(),
-      volumArea: parseFloat(editArea) || editTalhao.volumArea,
-      idTipoPlantacao: editTipoId,
-      idPropriedade: editPropId,
+      nomeTalhao,
+      volumArea,
+      idTipoPlantacao,
+      idPropriedade,
       idLocalizacao: finalLocId,
     });
     setEditTalhao(null);
@@ -106,11 +122,20 @@ export function TalhoesScreen({ navigation }: any) {
       <View style={styles.container}>
         <Header title={`Editar — ${editTalhao.nomeTalhao}`} />
         <ScrollView style={styles.editContainer}>
-          <Text style={styles.formLabel}>Nome do Talhão *</Text>
-          <TextInput style={styles.formInput} value={editNome} onChangeText={setEditNome} placeholderTextColor={Colors.textMuted} />
+          <FormInput
+            label="Nome do Talhão *"
+            iconName="tag"
+            value={editNome}
+            onChangeText={setEditNome}
+          />
 
-          <Text style={styles.formLabel}>Volume / Área (ha) *</Text>
-          <TextInput style={styles.formInput} value={editArea} onChangeText={setEditArea} keyboardType="numeric" placeholderTextColor={Colors.textMuted} />
+          <FormInput
+            label="Volume / Área (ha) *"
+            iconName="ruler-combined"
+            value={editArea}
+            onChangeText={setEditArea}
+            keyboardType="numeric"
+          />
 
           <Text style={styles.formLabel}>Tipo de Plantação *</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingBottom: 4, marginVertical: 6 }}>
@@ -138,37 +163,45 @@ export function TalhoesScreen({ navigation }: any) {
 
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.formLabel}>Latitude *</Text>
-              <TextInput
-                style={styles.formInput}
+              <FormInput
+                label="Latitude *"
+                iconName="map-marker-alt"
                 value={editLat}
                 onChangeText={setEditLat}
                 placeholder="Ex: -23.5505"
-                placeholderTextColor={Colors.textMuted}
                 keyboardType="numeric"
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.formLabel}>Longitude *</Text>
-              <TextInput
-                style={styles.formInput}
+              <FormInput
+                label="Longitude *"
+                iconName="map-marker-alt"
                 value={editLon}
                 onChangeText={setEditLon}
                 placeholder="Ex: -46.6333"
-                placeholderTextColor={Colors.textMuted}
                 keyboardType="numeric"
               />
             </View>
           </View>
 
+          <ValidationError message={editErro} />
+
           <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditTalhao(null)} activeOpacity={0.8}>
-              <Text style={styles.cancelBtnText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.saveBtn} onPress={saveEdit} activeOpacity={0.8}>
-              <FontAwesome5 name="save" size={14} color={Colors.bgPrimary} />
-              <Text style={styles.saveBtnText}>Salvar Alterações</Text>
-            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <PrimaryButton
+                title="Cancelar"
+                icon="arrow-left"
+                variant="outline"
+                onPress={() => setEditTalhao(null)}
+              />
+            </View>
+            <View style={{ flex: 2 }}>
+              <PrimaryButton
+                title="Salvar Alterações"
+                icon="save"
+                onPress={saveEdit}
+              />
+            </View>
           </View>
         </ScrollView>
       </View>
@@ -295,16 +328,11 @@ const styles = StyleSheet.create({
   detailText: { fontSize: 12, color: Colors.textSecondary },
 
   talhaoActions: { flexDirection: 'row', gap: 10, borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 12 },
-  irrigaBtnText: { fontSize: 13, color: '#3b82f6', fontWeight: '700' },
+  irrigaBtnText: { fontSize: 13, color: Colors.info, fontWeight: '700' },
   editBtn: { flex: 1, flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, backgroundColor: Colors.infoBg, alignItems: 'center', justifyContent: 'center' },
   deleteBtn: { flex: 1, flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, backgroundColor: Colors.dangerBg, alignItems: 'center', justifyContent: 'center' },
 
   editContainer: { padding: 20 },
   formLabel: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600', marginBottom: 8, marginTop: 14 },
-  formInput: { backgroundColor: Colors.bgInput, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 14, paddingVertical: 12, color: Colors.textPrimary, fontSize: 15 },
-  actionRow: { flexDirection: 'row', gap: 12, marginTop: 30 },
-  cancelBtn: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.bgTertiary, borderRadius: 12, height: 50, borderWidth: 1, borderColor: Colors.border },
-  cancelBtnText: { fontSize: 15, fontWeight: '600', color: Colors.textSecondary },
-  saveBtn: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.accent, borderRadius: 12, height: 50, gap: 8 },
-  saveBtnText: { fontSize: 15, fontWeight: '700', color: Colors.bgPrimary },
+  actionRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
 });

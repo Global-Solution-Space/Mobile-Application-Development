@@ -2,17 +2,28 @@ import axios from 'axios';
 import { Alert, Platform } from 'react-native';
 import { 
   Produtor, Telefone, Localizacao, Propriedade, TipoPlantacao, 
-  Talhao, SatVeg, SatVegRequestPayload, NasaPower, NasaPowerRequestPayload, AlertaAgricola, PaginatedResponse 
+  Talhao, ReqApiPayload, ReqApi, DadoTemporal, AlertaAgricola, PaginatedResponse 
 } from '../types';
+import { z } from 'zod';
+import { 
+  ProdutorResponseSchema, TelefoneResponseSchema, LocalizacaoResponseSchema,
+  PropriedadeResponseSchema, TipoPlantacaoResponseSchema, TalhaoResponseSchema,
+  AlertaAgricolaResponseSchema, DadoTemporalResponseSchema
+} from '../schemas';
 
 const api = axios.create({
   // Endereço de IP local da máquina para que dispositivos físicos e emuladores consigam conectar à API Java
-  baseURL: 'http://192.168.1.171:8080/api',
+  baseURL: 'http://10.165.38.175:8080/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+interface ValidationErrorItem {
+  campo: string;
+  mensagem: string;
+}
 
 api.interceptors.response.use(
   (response) => response,
@@ -25,7 +36,7 @@ api.interceptors.response.use(
       
       // Mapeia erros de validação da API Java: {"erros": [{"campo": "x", "mensagem": "y"}]}
       if (error.response.data && Array.isArray(error.response.data.erros)) {
-        msg = error.response.data.erros.map((e: any) => `${e.campo}: ${e.mensagem}`).join('\n');
+        msg = error.response.data.erros.map((e: ValidationErrorItem) => `${e.campo}: ${e.mensagem}`).join('\n');
       } else if (error.response.data && error.response.data.message) {
         msg = error.response.data.message;
       }
@@ -41,28 +52,36 @@ api.interceptors.response.use(
   }
 );
 
-// Helper to extract content from HATEOAS paginated response
-const extractContent = <T>(data: any): T[] => {
+// Helper to extract content from HATEOAS paginated response and validate it via Zod
+const extractAndValidate = <T>(data: any, schema: z.ZodType<T>): T[] => {
+  let arr: T[] = [];
   if (data && data.content && Array.isArray(data.content)) {
-    return data.content as T[];
-  }
-  if (data && data._embedded) {
+    arr = data.content;
+  } else if (data && data._embedded) {
     const key = Object.keys(data._embedded)[0];
-    return data._embedded[key] as T[];
+    arr = data._embedded[key];
+  } else if (Array.isArray(data)) {
+    arr = data;
   }
-  if (Array.isArray(data)) {
-    return data as T[];
+  
+  // Camada Anti-Corrupção (ACL): Valida o array inteiro.
+  const result = z.array(schema).safeParse(arr);
+  if (!result.success) {
+    console.warn("⚠️ API Data Corruption Detected. Filtrando itens corrompidos...", result.error);
+    // Em vez de crashar a lista toda (fail-fast), tenta salvar os itens saudáveis (fail-safe)
+    return arr.filter((item): item is T => schema.safeParse(item).success);
   }
-  return [];
+  
+  return result.data;
 };
 
 export const apiService = {
   // ── Produtores ──
   getProdutores: async () => {
     const res = await api.get('/produtores');
-    return extractContent<Produtor>(res.data);
+    return extractAndValidate<Produtor>(res.data, ProdutorResponseSchema);
   },
-  createProdutor: async (data: Omit<Produtor, 'id' | '_links'>) => {
+  createProdutor: async (data: Omit<Produtor, 'id' | '_links'> & { telefone?: { ddd: string; numero: string } }) => {
     const res = await api.post<Produtor>('/produtores', data);
     return res.data;
   },
@@ -74,7 +93,7 @@ export const apiService = {
   // ── Telefones ──
   getTelefones: async () => {
     const res = await api.get('/telefones');
-    return extractContent<Telefone>(res.data);
+    return extractAndValidate<Telefone>(res.data, TelefoneResponseSchema);
   },
   createTelefone: async (data: Omit<Telefone, 'id' | '_links'>) => {
     const res = await api.post<Telefone>('/telefones', data);
@@ -88,7 +107,7 @@ export const apiService = {
   // ── Localizacoes ──
   getLocalizacoes: async () => {
     const res = await api.get('/localizacoes');
-    return extractContent<Localizacao>(res.data);
+    return extractAndValidate<Localizacao>(res.data, LocalizacaoResponseSchema);
   },
   createLocalizacao: async (data: Omit<Localizacao, 'id' | '_links'>) => {
     const res = await api.post<Localizacao>('/localizacoes', data);
@@ -98,7 +117,11 @@ export const apiService = {
   // ── Propriedades ──
   getPropriedades: async () => {
     const res = await api.get('/propriedades');
-    return extractContent<Propriedade>(res.data);
+    return extractAndValidate<Propriedade>(res.data, PropriedadeResponseSchema);
+  },
+  getPropriedadesDoProdutor: async (idProdutor: number) => {
+    const res = await api.get(`/propriedades/produtor/${idProdutor}`);
+    return extractAndValidate<Propriedade>(res.data, PropriedadeResponseSchema);
   },
   createPropriedade: async (data: Omit<Propriedade, 'id' | '_links'>) => {
     const res = await api.post<Propriedade>('/propriedades', data);
@@ -108,7 +131,7 @@ export const apiService = {
   // ── Tipos de Plantacao ──
   getTiposPlantacao: async () => {
     const res = await api.get('/tipos-plantacao');
-    return extractContent<TipoPlantacao>(res.data);
+    return extractAndValidate<TipoPlantacao>(res.data, TipoPlantacaoResponseSchema);
   },
   createTipoPlantacao: async (data: Omit<TipoPlantacao, 'id' | '_links'>) => {
     const res = await api.post<TipoPlantacao>('/tipos-plantacao', data);
@@ -118,7 +141,11 @@ export const apiService = {
   // ── Talhoes ──
   getTalhoes: async () => {
     const res = await api.get('/talhoes');
-    return extractContent<Talhao>(res.data);
+    return extractAndValidate<Talhao>(res.data, TalhaoResponseSchema);
+  },
+  getTalhoesDoProdutor: async (idProdutor: number) => {
+    const res = await api.get(`/talhoes/produtor/${idProdutor}`);
+    return extractAndValidate<Talhao>(res.data, TalhaoResponseSchema);
   },
   createTalhao: async (data: Omit<Talhao, 'id' | '_links'>) => {
     const res = await api.post<Talhao>('/talhoes', data);
@@ -132,34 +159,26 @@ export const apiService = {
     await api.delete(`/talhoes/${id}`);
   },
 
-  // ── SatVeg & NasaPower (Satelite Integrations) ──
-  getSatVegs: async () => {
-    const res = await api.get('/satveg');
-    return extractContent<SatVeg>(res.data);
-  },
-  createSatVeg: async (data: SatVegRequestPayload) => {
-    const res = await api.post<SatVeg>('/satveg', data);
+  // ── ReqApi (SatVeg & NasaPower unificados) ──
+  createReqApi: async (data: ReqApiPayload) => {
+    const res = await api.post<ReqApi>('/req-api', data);
     return res.data;
   },
-  deleteSatVeg: async (id: number) => {
-    await api.delete(`/satveg/${id}`);
-  },
-  getNasaPowers: async () => {
-    const res = await api.get('/nasapower');
-    return extractContent<NasaPower>(res.data);
-  },
-  createNasaPower: async (data: NasaPowerRequestPayload) => {
-    const res = await api.post<NasaPower>('/nasapower', data);
-    return res.data;
-  },
-  deleteNasaPower: async (id: number) => {
-    await api.delete(`/nasapower/${id}`);
+
+  // ── Dados Temporais (Resultados das APIs unificados) ──
+  getDadosTemporais: async (idTalhao: number) => {
+    const res = await api.get(`/dados-temporais/talhao/${idTalhao}`);
+    return extractAndValidate<DadoTemporal>(res.data, DadoTemporalResponseSchema);
   },
 
   // ── Alertas Agricolas ──
   getAlertas: async () => {
     const res = await api.get('/alertas');
-    return extractContent<AlertaAgricola>(res.data);
+    return extractAndValidate<AlertaAgricola>(res.data, AlertaAgricolaResponseSchema);
+  },
+  getAlertasDoProdutor: async (idProdutor: number) => {
+    const res = await api.get(`/alertas/produtor/${idProdutor}`);
+    return extractAndValidate<AlertaAgricola>(res.data, AlertaAgricolaResponseSchema);
   },
   createAlerta: async (data: Omit<AlertaAgricola, 'id' | '_links' | 'dataAlerta'>) => {
     const res = await api.post<AlertaAgricola>('/alertas', data);

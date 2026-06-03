@@ -15,7 +15,9 @@ import { AlertasScreen }      from '../screens/Alertas/AlertasScreen';
 import { CriarTalhaoScreen }  from '../screens/Talhoes/CriarTalhaoScreen';
 import { AnaliseDetalhesScreen } from '../screens/Analise/AnaliseDetalhesScreen';
 
-const Stack = createNativeStackNavigator<any>();
+import { RootStackParamList } from '../types';
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function MainStack() {
   const { isLoggedIn } = useAppStore();

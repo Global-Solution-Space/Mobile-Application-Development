@@ -12,26 +12,41 @@ import { Colors } from '../../theme/colors';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useAppStore } from '../../store/useAppStore';
+import { LoginSchema } from '../../schemas';
+import { ValidationError } from '../../components/ValidationError';
+
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types';
 
 interface LoginScreenProps {
-  navigation: any;
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Login'>;
 }
 
 export function LoginScreen({ navigation }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [showSenha, setShowSenha] = useState(false);
+  const [erro, setErro] = useState('');
 
   const login = useAppStore(s => s.login);
 
   const handleLogin = async () => {
-    if (!email.trim() || !senha.trim()) {
-      Alert.alert('Campos obrigatórios', 'Preencha e-mail e senha para acessar.');
+    setErro('');
+    const validation = LoginSchema.safeParse({ email, senha });
+    if (!validation.success) {
+      setErro(validation.error.issues[0].message);
       return;
     }
-    const ok = await login(email.trim(), senha);
-    if (!ok) {
-      Alert.alert('Falha no login', 'E-mail ou senha incorretos. Tente novamente.');
+    const res = await login(validation.data.email, validation.data.senha);
+    if (!res.success) {
+      if (res.errorType === 'network') {
+        Alert.alert(
+          'Erro de Conexão',
+          'Não foi possível conectar ao servidor. Certifique-se de que a API Spring Boot está rodando e que o IP configurado em api.ts está correto.'
+        );
+      } else {
+        Alert.alert('Falha no login', 'E-mail ou senha incorretos. Tente novamente.');
+      }
     }
   };
 
@@ -72,6 +87,8 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
             rightIcon={showSenha ? 'eye-slash' : 'eye'}
             onRightIconPress={() => setShowSenha(!showSenha)}
           />
+
+          <ValidationError message={erro} />
 
           <PrimaryButton
             title="Entrar no Sistema"
@@ -149,43 +166,6 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginBottom: 20,
     textAlign: 'center',
-  },
-  inputGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgInput,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 14,
-    marginBottom: 14,
-    height: 52,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    color: Colors.textPrimary,
-    fontSize: 15,
-  },
-  eyeBtn: {
-    padding: 8,
-  },
-  loginBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.accent,
-    borderRadius: 12,
-    height: 52,
-    gap: 10,
-    marginTop: 8,
-  },
-  loginBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.bgPrimary,
   },
   registerLink: {
     marginTop: 18,

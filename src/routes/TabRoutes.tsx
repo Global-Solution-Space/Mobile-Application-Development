@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { Colors } from '../theme/colors';
 
 import { HomeScreen } from '../screens/Home/HomeScreen';
 import { TalhoesScreen } from '../screens/Talhoes/TalhoesScreen';
@@ -16,13 +17,13 @@ export function TabRoutes() {
             headerShown: false,
             tabBarShowLabel: false, 
             tabBarStyle: {
-                backgroundColor: '#0A1F16', 
+                backgroundColor: Colors.bgPrimary, 
                 borderTopWidth: 1,
-                borderTopColor: '#11422B',
+                borderTopColor: Colors.border,
                 height: 60, 
             },
-            tabBarActiveTintColor: '#10B981', 
-            tabBarInactiveTintColor: '#64748B',
+            tabBarActiveTintColor: Colors.accent, 
+            tabBarInactiveTintColor: Colors.textMuted,
         }}
     >
         <Tab.Screen 

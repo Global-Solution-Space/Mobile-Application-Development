@@ -3,40 +3,14 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, LayoutAnimation, Platform, UIManager,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native'; // 👈 adiciona
+import { useNavigation } from '@react-navigation/native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
-
-const FAQ_DATA = [
-  {
-    id: '1',
-    pergunta: 'O que significa quando um Talhão está em status "Crítico"?',
-    resposta: 'Indica que os sensores ou a análise de satélite detectaram anomalias graves, como estresse hídrico agudo, pragas ou temperatura extrema. Recomenda-se verificar o talhão imediatamente.'
-  },
-  {
-    id: '2',
-    pergunta: 'Como funciona a análise por satélite?',
-    resposta: 'O sistema utiliza dados geoespaciais e análise espectral para varrer a área de cultivo buscando anomalias foliares e problemas no solo. Quando detectados, alertas vermelhos aparecerão no seu Dashboard inicial.'
-  },
-  {
-    id: '3',
-    pergunta: 'Posso criar uma Propriedade direto na tela de Talhões?',
-    resposta: 'Sim! Através da criação expressa, basta tocar no ícone "+", e o formulário abrirá um modal para criação sem precisar sair da tela.'
-  },
-  {
-    id: '4',
-    pergunta: 'Como funcionam os alertas de satélite?',
-    resposta: 'O sistema analisa dados do SatVeg e NasaPower para detectar anomalias climáticas ou de vegetação, disparando Alertas Agrícolas automaticamente para o seu painel.'
-  },
-  {
-    id: '5',
-    pergunta: 'Como o Terra Nova ajuda na sustentabilidade?',
-    resposta: 'Ao monitorar exatamente o que a planta precisa (água, luz e nutrientes), evitamos o desperdício de recursos naturais e a aplicação excessiva de fertilizantes químicos, protegendo o solo e economizando água.'
-  },
-];
+import { Header } from '../../components/Header';
+import { FAQ_DATA } from '../../data/faq';
 
 export function FaqScreen() {
-  const navigation = useNavigation(); // 👈 adiciona
+  const navigation = useNavigation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {
@@ -47,18 +21,7 @@ export function FaqScreen() {
   return (
     <View style={styles.container}>
 
-      {/* ── HEADER COM VOLTAR ── */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <FontAwesome5 name="arrow-left" size={14} color="#ffffff99" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Manual de Cultivo</Text>
-        <View style={{ width: 32 }} />
-      </View>
+      <Header title="Manual de Cultivo" showBackButton />
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.infoBox}>
@@ -104,26 +67,6 @@ export function FaqScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bgPrimary },
-
-  // ── header ──
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#ffffff14',
-  },
-  backBtn: {
-    width: 32, height: 32, borderRadius: 10,
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 0.5, borderColor: '#ffffff14',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  headerTitle: {
-    flex: 1, textAlign: 'center',
-    color: '#fff', fontSize: 16, fontWeight: '600',
-  },
 
   scroll: { padding: 20, paddingBottom: 40 },
 

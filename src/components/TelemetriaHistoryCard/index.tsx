@@ -9,9 +9,26 @@ interface TelemetriaHistoryCardProps {
   title: string;
   subtitle: string;
   dados: Record<string, number>;
-  onDelete: () => void;
+  onDelete?: () => void;
   onPressViewAll: () => void;
 }
+
+const CARD_CONFIG = {
+  nasa: {
+    heading: 'Dados de Precipitação (preview):',
+    showProgress: false,
+    formatValue: (val: number) => `${(val || 0).toFixed(1)} mm`,
+    valColor: Colors.info,
+    fontWeight: 'bold' as const,
+  },
+  satveg: {
+    heading: 'Índice de Vegetação NDVI (preview):',
+    showProgress: true,
+    formatValue: (val: number) => (val || 0).toFixed(3),
+    valColor: Colors.textPrimary,
+    fontWeight: 'normal' as const,
+  }
+};
 
 export function TelemetriaHistoryCard({
   id,
@@ -27,7 +44,7 @@ export function TelemetriaHistoryCard({
     .sort((a, b) => b.date.localeCompare(a.date)); // newest first
 
   const previewData = sortedEntries.slice(0, 5);
-  const isNasa = type === 'nasa';
+  const config = CARD_CONFIG[type];
 
   return (
     <View style={styles.card}>
@@ -36,18 +53,18 @@ export function TelemetriaHistoryCard({
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
-        <TouchableOpacity
-          style={styles.deleteBtn}
-          onPress={onDelete}
-          activeOpacity={0.7}
-        >
-          <FontAwesome5 name="trash" size={13} color={Colors.danger} />
-        </TouchableOpacity>
+        {onDelete && (
+          <TouchableOpacity
+            style={styles.deleteBtn}
+            onPress={onDelete}
+            activeOpacity={0.7}
+          >
+            <FontAwesome5 name="trash" size={13} color={Colors.danger} />
+          </TouchableOpacity>
+        )}
       </View>
 
-      <Text style={styles.dataHeading}>
-        {isNasa ? 'Dados de Precipitação (preview):' : 'Índice de Vegetação NDVI (preview):'}
-      </Text>
+      <Text style={styles.dataHeading}>{config.heading}</Text>
 
       {sortedEntries.length === 0 ? (
         <Text style={styles.noDataText}>Nenhum dado temporal disponível.</Text>
@@ -57,7 +74,7 @@ export function TelemetriaHistoryCard({
             <View key={date} style={styles.dataRow}>
               <Text style={styles.dataDate}>{date}</Text>
               
-              {!isNasa ? (
+              {config.showProgress ? (
                 // Progress bar for NDVI (0 to 1)
                 <View style={styles.progressContainer}>
                   <View style={[styles.progressBar, { width: `${Math.min(Math.max((val || 0) * 100, 0), 100)}%` }]} />
@@ -66,8 +83,8 @@ export function TelemetriaHistoryCard({
                 <View style={styles.flexSpacer} />
               )}
 
-              <Text style={[styles.dataVal, isNasa && styles.nasaVal]}>
-                {isNasa ? `${(val || 0).toFixed(1)} mm` : (val || 0).toFixed(3)}
+              <Text style={[styles.dataVal, { color: config.valColor, fontWeight: config.fontWeight }]}>
+                {config.formatValue(val)}
               </Text>
             </View>
           ))}
@@ -161,13 +178,8 @@ const styles = StyleSheet.create({
   },
   dataVal: {
     fontSize: 11,
-    color: Colors.textPrimary,
     textAlign: 'right',
     width: 55,
-  },
-  nasaVal: {
-    color: '#3B82F6',
-    fontWeight: 'bold',
   },
   viewAllBtn: {
     flexDirection: 'row',

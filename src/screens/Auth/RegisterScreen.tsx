@@ -4,15 +4,22 @@
 
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
+  View, Text, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
+import { FormInput } from '../../components/FormInput';
+import { PrimaryButton } from '../../components/PrimaryButton';
 import { useAppStore } from '../../store/useAppStore';
+import { RegisterSchema } from '../../schemas';
+import { ValidationError } from '../../components/ValidationError';
+
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types';
 
 interface RegisterScreenProps {
-  navigation: any;
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Register'>;
 }
 
 export function RegisterScreen({ navigation }: RegisterScreenProps) {
@@ -22,25 +29,30 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [ddd, setDdd] = useState('');
   const [telefone, setTelefone] = useState('');
+  const [erro, setErro] = useState('');
 
   const register = useAppStore(s => s.register);
 
   const handleRegister = async () => {
-    if (!nome.trim() || !email.trim() || !senha.trim()) {
-      Alert.alert('Campos obrigatórios', 'Preencha todos os campos para criar sua conta.');
+    setErro('');
+    const validation = RegisterSchema.safeParse({ nome, email, senha, confirmarSenha, ddd, telefone });
+    
+    if (!validation.success) {
+      setErro(validation.error.issues[0].message);
       return;
     }
-    if (senha !== confirmarSenha) {
-      Alert.alert('Senhas diferentes', 'As senhas não coincidem. Verifique e tente novamente.');
-      return;
-    }
-    if (senha.length < 6) {
-      Alert.alert('Senha fraca', 'A senha deve ter pelo menos 6 caracteres.');
-      return;
-    }
-    const ok = await register(nome.trim(), email.trim(), senha, ddd.trim(), telefone.trim());
-    if (!ok) {
-      Alert.alert('E-mail em uso', 'Este e-mail já está cadastrado no sistema.');
+
+    const { nome: nomeValid, email: emailValid, senha: senhaValid, ddd: dddValid, telefone: telValid } = validation.data;
+    const res = await register(nomeValid, emailValid, senhaValid, dddValid || '', telValid || '');
+    if (!res.success) {
+      if (res.errorType === 'network') {
+        Alert.alert(
+          'Erro de Conexão',
+          'Não foi possível conectar ao servidor. Certifique-se de que a API Spring Boot está rodando e que o IP configurado em api.ts está correto.'
+        );
+      } else {
+        Alert.alert('E-mail em uso', 'Este e-mail já está cadastrado no sistema.');
+      }
     }
   };
 
@@ -49,7 +61,12 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
+      <ScrollView 
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.inner} 
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* ── Header ─── */}
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <FontAwesome5 name="arrow-left" size={18} color={Colors.accent} />
@@ -65,48 +82,36 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
 
         {/* ── Form ─── */}
         <View style={styles.formContainer}>
-          <View style={styles.inputGroup}>
-            <FontAwesome5 name="user" size={16} color={Colors.textMuted} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Nome completo"
-              placeholderTextColor={Colors.textMuted}
-              value={nome}
-              onChangeText={setNome}
-            />
-          </View>
+          <FormInput
+            iconName="user"
+            placeholder="Nome completo"
+            value={nome}
+            onChangeText={setNome}
+          />
 
-          <View style={styles.inputGroup}>
-            <FontAwesome5 name="envelope" size={16} color={Colors.textMuted} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="E-mail"
-              placeholderTextColor={Colors.textMuted}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
+          <FormInput
+            iconName="envelope"
+            placeholder="E-mail"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
 
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <View style={[styles.inputGroup, { flex: 0.3 }]}>
-              <TextInput
-                style={styles.input}
+            <View style={{ flex: 0.3 }}>
+              <FormInput
                 placeholder="DDD"
-                placeholderTextColor={Colors.textMuted}
                 value={ddd}
                 onChangeText={setDdd}
                 keyboardType="numeric"
                 maxLength={2}
               />
             </View>
-            <View style={[styles.inputGroup, { flex: 0.7 }]}>
-              <FontAwesome5 name="phone" size={16} color={Colors.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
+            <View style={{ flex: 0.7 }}>
+              <FormInput
+                iconName="phone"
                 placeholder="Telefone"
-                placeholderTextColor={Colors.textMuted}
                 value={telefone}
                 onChangeText={setTelefone}
                 keyboardType="numeric"
@@ -115,34 +120,29 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
             </View>
           </View>
 
-          <View style={styles.inputGroup}>
-            <FontAwesome5 name="lock" size={16} color={Colors.textMuted} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Senha (mín. 6 caracteres)"
-              placeholderTextColor={Colors.textMuted}
-              value={senha}
-              onChangeText={setSenha}
-              secureTextEntry
-            />
-          </View>
+          <FormInput
+            iconName="lock"
+            placeholder="Senha (mín. 6 caracteres)"
+            value={senha}
+            onChangeText={setSenha}
+            secureTextEntry
+          />
 
-          <View style={styles.inputGroup}>
-            <FontAwesome5 name="shield-alt" size={16} color={Colors.textMuted} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Confirmar senha"
-              placeholderTextColor={Colors.textMuted}
-              value={confirmarSenha}
-              onChangeText={setConfirmarSenha}
-              secureTextEntry
-            />
-          </View>
+          <FormInput
+            iconName="shield-alt"
+            placeholder="Confirmar senha"
+            value={confirmarSenha}
+            onChangeText={setConfirmarSenha}
+            secureTextEntry
+          />
 
-          <TouchableOpacity style={styles.registerBtn} onPress={handleRegister} activeOpacity={0.8}>
-            <FontAwesome5 name="user-plus" size={16} color={Colors.bgPrimary} />
-            <Text style={styles.registerBtnText}>Criar Conta</Text>
-          </TouchableOpacity>
+          <ValidationError message={erro} />
+
+          <PrimaryButton
+            title="Criar Conta"
+            icon="user-plus"
+            onPress={handleRegister}
+          />
 
           <TouchableOpacity
             style={styles.loginLink}
@@ -168,7 +168,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 28,
-    paddingVertical: 40,
+    paddingTop: 60,
+    paddingBottom: 80,
   },
   backBtn: {
     position: 'absolute',
@@ -208,40 +209,6 @@ const styles = StyleSheet.create({
     padding: 24,
     borderWidth: 1,
     borderColor: Colors.border,
-  },
-  inputGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgInput,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 14,
-    marginBottom: 14,
-    height: 52,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    color: Colors.textPrimary,
-    fontSize: 15,
-  },
-  registerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.accent,
-    borderRadius: 12,
-    height: 52,
-    gap: 10,
-    marginTop: 8,
-  },
-  registerBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.bgPrimary,
   },
   loginLink: {
     marginTop: 18,

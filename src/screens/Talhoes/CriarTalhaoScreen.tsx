@@ -4,9 +4,11 @@
 
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TextInput,
+  View, Text, StyleSheet, ScrollView,
   TouchableOpacity, KeyboardAvoidingView, Platform, Alert
 } from 'react-native';
+import { PrimaryButton } from '../../components/PrimaryButton';
+import { FormInput } from '../../components/FormInput';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Header } from '../../components/Header';
@@ -14,8 +16,16 @@ import { SelectChip } from '../../components/SelectChip';
 import { ModalTipoPlantacao } from '../../components/Modals/ModalTipoPlantacao';
 import { ModalPropriedade } from '../../components/Modals/ModalPropriedade';
 import { useAppStore } from '../../store/useAppStore';
+import { TalhaoSchema } from '../../schemas';
+import { ValidationError } from '../../components/ValidationError';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types';
 
-export function CriarTalhaoScreen({ navigation }: any) {
+interface CriarTalhaoScreenProps {
+  navigation: NativeStackNavigationProp<RootStackParamList, 'CriarTalhao'>;
+}
+
+export function CriarTalhaoScreen({ navigation }: CriarTalhaoScreenProps) {
   const { 
     addTalhao, propriedades, tiposPlantacao, localizacoes, 
     addLocalizacao, currentUser 
@@ -39,25 +49,28 @@ export function CriarTalhaoScreen({ navigation }: any) {
   const handleSaveTalhao = async () => {
     setErro('');
 
-    if (!nome.trim() || !area.trim() || !tipoId || !propId || !lat.trim() || !lon.trim()) {
-      setErro('Preencha todos os campos do Talhão.');
+    const validation = TalhaoSchema.safeParse({
+      nomeTalhao: nome,
+      volumArea: area,
+      locLatitude: lat,
+      locLongitude: lon,
+      idTipoPlantacao: tipoId,
+      idPropriedade: propId
+    });
+
+    if (!validation.success) {
+      setErro(validation.error.issues[0].message);
       return;
     }
 
-    const latitude = parseFloat(lat);
-    const longitude = parseFloat(lon);
-
-    if (isNaN(latitude) || isNaN(longitude)) {
-      setErro('Latitude e Longitude devem ser numéricos.');
-      return;
-    }
+    const { nomeTalhao, volumArea, locLatitude, locLongitude, idTipoPlantacao, idPropriedade } = validation.data;
 
     // Procura localização existente
-    let locId = localizacoes.find(l => l.locLatitude === latitude && l.locLongitude === longitude)?.id;
+    let locId = localizacoes.find(l => l.locLatitude === locLatitude && l.locLongitude === locLongitude)?.id;
     
     // Se não existir, cria
     if (!locId) {
-      const novaLoc = await addLocalizacao({ locLatitude: latitude, locLongitude: longitude });
+      const novaLoc = await addLocalizacao({ locLatitude, locLongitude });
       if (!novaLoc) {
         setErro('Erro ao cadastrar localização do Talhão.');
         return;
@@ -66,10 +79,10 @@ export function CriarTalhaoScreen({ navigation }: any) {
     }
 
     await addTalhao({
-      nomeTalhao: nome.trim(),
-      volumArea: parseFloat(area),
-      idTipoPlantacao: tipoId,
-      idPropriedade: propId,
+      nomeTalhao,
+      volumArea,
+      idTipoPlantacao,
+      idPropriedade,
       idLocalizacao: locId,
     });
 
@@ -94,23 +107,21 @@ export function CriarTalhaoScreen({ navigation }: any) {
           
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>INFORMAÇÕES DO TALHÃO</Text>
-            
-            <Text style={styles.label}>Nome / Identificação *</Text>
-            <TextInput
-              style={styles.input}
+
+            <FormInput
+              label="Nome / Identificação *"
+              iconName="tag"
               value={nome}
               onChangeText={setNome}
               placeholder="Ex: Talhão Sul 01"
-              placeholderTextColor={Colors.textMuted}
             />
 
-            <Text style={styles.label}>Volume / Área (ha) *</Text>
-            <TextInput
-              style={styles.input}
+            <FormInput
+              label="Volume / Área (ha) *"
+              iconName="ruler-combined"
               value={area}
               onChangeText={setArea}
               placeholder="Ex: 5.5"
-              placeholderTextColor={Colors.textMuted}
               keyboardType="numeric"
             />
           </View>
@@ -161,44 +172,40 @@ export function CriarTalhaoScreen({ navigation }: any) {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>LOCALIZAÇÃO (GPS) DO TALHÃO</Text>
-            
+
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Latitude *</Text>
-                <TextInput
-                  style={styles.input}
+                <FormInput
+                  label="Latitude *"
+                  iconName="map-marker-alt"
                   value={lat}
                   onChangeText={setLat}
                   placeholder="Ex: -23.5505"
-                  placeholderTextColor={Colors.textMuted}
                   keyboardType="numeric"
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Longitude *</Text>
-                <TextInput
-                  style={styles.input}
+                <FormInput
+                  label="Longitude *"
+                  iconName="map-marker-alt"
                   value={lon}
                   onChangeText={setLon}
                   placeholder="Ex: -46.6333"
-                  placeholderTextColor={Colors.textMuted}
                   keyboardType="numeric"
                 />
               </View>
             </View>
           </View>
 
-          {erro !== '' && (
-            <View style={styles.errorBox}>
-              <FontAwesome5 name="exclamation-triangle" size={13} color={Colors.danger} />
-              <Text style={styles.errorText}>{erro}</Text>
-            </View>
-          )}
+          <ValidationError message={erro} />
 
-          <TouchableOpacity style={styles.saveBtn} onPress={handleSaveTalhao} activeOpacity={0.85}>
-            <FontAwesome5 name="save" size={14} color={Colors.bgPrimary} />
-            <Text style={styles.saveBtnText}>Salvar Talhão</Text>
-          </TouchableOpacity>
+          <View style={{ paddingHorizontal: 20, marginTop: 8 }}>
+            <PrimaryButton
+              title="Salvar Talhão"
+              icon="save"
+              onPress={handleSaveTalhao}
+            />
+          </View>
 
         </ScrollView>
       </KeyboardAvoidingView>
@@ -225,27 +232,6 @@ const styles = StyleSheet.create({
   labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   label: { fontSize: 12, color: Colors.textSecondary, fontWeight: '600', marginBottom: 6 },
   addLink: { fontSize: 12, color: Colors.info, fontWeight: '700' },
-  input: {
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: 10, borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: 14, paddingVertical: 12,
-    color: Colors.textPrimary, fontSize: 14, marginBottom: 4,
-  },
   chipScroll: { paddingBottom: 4 },
   emptyText: { color: Colors.textMuted, fontSize: 12, fontStyle: 'italic' },
-  
-  errorBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: Colors.dangerBg, padding: 12,
-    borderRadius: 10, marginHorizontal: 20, marginTop: 24,
-    borderWidth: 1, borderColor: Colors.danger,
-  },
-  errorText: { color: Colors.danger, fontSize: 13, flex: 1 },
-  
-  saveBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.accent, borderRadius: 12, padding: 16,
-    marginHorizontal: 20, marginTop: 24,
-  },
-  saveBtnText: { color: Colors.bgPrimary, fontSize: 16, fontWeight: '700' },
 });

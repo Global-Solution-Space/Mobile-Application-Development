@@ -10,7 +10,21 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Header } from '../../components/Header';
 
-export function AnaliseDetalhesScreen({ route }: any) {
+import { RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types';
+
+interface AnaliseDetalhesScreenProps {
+  navigation: NativeStackNavigationProp<RootStackParamList, 'AnaliseDetalhes'>;
+  route: RouteProp<RootStackParamList, 'AnaliseDetalhes'>;
+}
+
+interface DataEntry {
+  date: string;
+  val: number;
+}
+
+export function AnaliseDetalhesScreen({ route }: AnaliseDetalhesScreenProps) {
   const { type, id, title, subtitle, dados } = route.params || {};
   
   const isNasa = type === 'nasa';
@@ -30,39 +44,28 @@ export function AnaliseDetalhesScreen({ route }: any) {
     return { dataEntries: entries, tableEntries: tEntries, chartMax: cMax };
   }, [dados, isNasa]);
 
-  // Selected bar state for interactive details
-  const [selectedPoint, setSelectedPoint] = useState<{ date: string; val: number } | null>(
-    dataEntries.length > 0 ? dataEntries[dataEntries.length - 1] : null
-  );
-
-  const renderChartBar = useCallback(({ item }: any) => {
+  const renderChartBar = useCallback(({ item }: { item: DataEntry }) => {
     const percent = Math.min((item.val / chartMax) * 100, 100);
-    const isSelected = selectedPoint?.date === item.date;
 
     return (
-      <TouchableOpacity
-        style={styles.barColumn}
-        onPress={() => setSelectedPoint(item)}
-        activeOpacity={0.8}
-      >
+      <View style={styles.barColumn}>
         <View style={styles.barWrapper}>
           <View
             style={[
               styles.barFill,
               { height: `${percent}%` },
-              isNasa ? styles.barFillNasa : styles.barFillSatveg,
-              isSelected && styles.barFillSelected
+              isNasa ? styles.barFillNasa : styles.barFillSatveg
             ]}
           />
         </View>
-        <Text style={[styles.barLabel, isSelected && styles.barLabelSelected]}>
+        <Text style={styles.barLabel}>
           {item.date.substring(8, 10)}/{item.date.substring(5, 7)}
         </Text>
-      </TouchableOpacity>
+      </View>
     );
-  }, [chartMax, isNasa, selectedPoint?.date]);
+  }, [chartMax, isNasa]);
 
-  const renderTableRow = useCallback(({ item, index }: any) => {
+  const renderTableRow = useCallback(({ item, index }: { item: DataEntry; index: number }) => {
     const isLast = index === tableEntries.length - 1;
     return (
       <View style={[styles.tableRowWrapper, isLast && styles.tableRowLast]}>
@@ -94,8 +97,8 @@ export function AnaliseDetalhesScreen({ route }: any) {
             {/* Info Card header */}
             <View style={styles.summaryCard}>
               <View style={styles.badgeRow}>
-                <View style={[styles.typeBadge, { backgroundColor: isNasa ? '#3B82F6' : Colors.accent }]}>
-                  <FontAwesome5 name={isNasa ? 'cloud-sun-rain' : 'satellite'} size={11} color="#FFF" />
+                <View style={[styles.typeBadge, { backgroundColor: isNasa ? Colors.info : Colors.accent }]}>
+                  <FontAwesome5 name={isNasa ? 'cloud-sun-rain' : 'satellite'} size={11} color={Colors.textPrimary} />
                   <Text style={styles.typeBadgeText}>
                     {isNasa ? 'NASA Power' : 'Embrapa SATveg'}
                   </Text>
@@ -107,38 +110,18 @@ export function AnaliseDetalhesScreen({ route }: any) {
               <Text style={styles.subtitle}>{subtitle}</Text>
             </View>
 
-            {/* ── SEÇÃO: GRÁFICO INTERATIVO */}
-            <View style={styles.chartContainer}>
-              <Text style={styles.sectionTitle}>📈 Visualização Temporal</Text>
-              <Text style={styles.sectionSubtitle}>
-                Toque em uma barra para inspecionar a medição.
-              </Text>
-
-              {dataEntries.length === 0 ? (
-                <View style={styles.emptyChart}>
-                  <Text style={styles.emptyText}>Sem dados temporais disponíveis.</Text>
-                </View>
-              ) : (
-                <View>
-                  {/* Tooltip Overlay */}
-                  <View style={styles.tooltipContainer}>
-                    {selectedPoint ? (
-                      <View style={styles.tooltip}>
-                        <Text style={styles.tooltipDate}>{selectedPoint.date}</Text>
-                        <Text style={[styles.tooltipVal, isNasa && styles.tooltipValNasa]}>
-                          {isNasa 
-                            ? `${selectedPoint.val.toFixed(2)} mm (Precipitação)` 
-                            : `${selectedPoint.val.toFixed(4)} (Índice NDVI)`
-                          }
-                        </Text>
-                      </View>
-                    ) : (
-                      <Text style={styles.tooltipPlaceholder}>Selecione um ponto no gráfico</Text>
-                    )}
-                  </View>
-
-                  {/* Bar Chart Area */}
-                  <View style={styles.chartArea}>
+             {/* ── SEÇÃO: GRÁFICO INTERATIVO */}
+             <View style={styles.chartContainer}>
+               <Text style={styles.sectionTitle}>📈 Visualização Temporal</Text>
+ 
+               {dataEntries.length === 0 ? (
+                 <View style={styles.emptyChart}>
+                   <Text style={styles.emptyText}>Sem dados temporais disponíveis.</Text>
+                 </View>
+               ) : (
+                 <View>
+                   {/* Bar Chart Area */}
+                   <View style={styles.chartArea}>
                     {/* Y-Axis Grid Lines */}
                     <View style={styles.gridLinesContainer}>
                       <View style={styles.gridLineRow}>
@@ -168,7 +151,7 @@ export function AnaliseDetalhesScreen({ route }: any) {
                       horizontal
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={styles.barsScrollContainer}
-                      data={dataEntries}
+                      data={tableEntries}
                       keyExtractor={(item) => item.date}
                       initialNumToRender={10}
                       maxToRenderPerBatch={5}
@@ -227,7 +210,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   typeBadgeText: {
-    color: '#FFF',
+    color: Colors.textPrimary,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -300,7 +283,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   tooltipValNasa: {
-    color: '#3B82F6',
+    color: Colors.info,
   },
   tooltipPlaceholder: {
     fontSize: 12,
@@ -365,12 +348,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent,
   },
   barFillNasa: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: Colors.info,
   },
   barFillSelected: {
     borderWidth: 1,
-    borderColor: '#FFF',
-    shadowColor: '#FFF',
+    borderColor: Colors.textPrimary,
+    shadowColor: Colors.textPrimary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 4,
@@ -453,6 +436,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   tableValNasa: {
-    color: '#3B82F6',
+    color: Colors.info,
   },
 });

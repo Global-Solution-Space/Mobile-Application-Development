@@ -12,8 +12,14 @@ import { EmptyState } from '../../components/EmptyState';
 import { PropriedadeCard } from '../../components/PropriedadeCard';
 import { useAppStore } from '../../store/useAppStore';
 import { Propriedade } from '../../types';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types';
 
-export function PropriedadesScreen({ navigation }: any) {
+interface PropriedadesScreenProps {
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Propriedades'>;
+}
+
+export function PropriedadesScreen({ navigation }: PropriedadesScreenProps) {
   const { propriedades, talhoes } = useAppStore();
 
   const renderItem = ({ item }: { item: Propriedade }) => {

@@ -12,14 +12,35 @@ import { Colors } from '../../theme/colors';
 import { Header } from '../../components/Header';
 import { TalhaoSelector } from '../../components/TalhaoSelector';
 import { TabSelector } from '../../components/TabSelector';
-import { SatVegPanel } from '../../components/SatVegPanel';
-import { NasaPowerPanel } from '../../components/NasaPowerPanel';
+import { AnalisePanel } from '../../components/AnalisePanel';
 import { useAppStore } from '../../store/useAppStore';
 
-export function AnaliseScreen({ navigation }: any) {
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types';
+
+interface AnaliseScreenProps {
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Tabs'>;
+}
+
+interface ApiConfig {
+  tipoApiNome: string;
+  type: 'satveg' | 'nasa';
+  title: string;
+  description: string;
+  buttonIcon: React.ComponentProps<typeof FontAwesome5>['name'];
+  buttonText: string;
+  buttonColor?: string;
+  buttonTextColor?: string;
+  sectionHeading: string;
+  emptyMessage: string;
+  subtitleGrafico: string;
+  tipoParam: string;
+  nomeExibicao: string;
+}
+
+export function AnaliseScreen({ navigation }: AnaliseScreenProps) {
   const {
-    talhoes, satvegs, nasapowers, addSatVeg, addNasaPower,
-    deleteSatVeg, deleteNasaPower, isLoading, localizacoes
+    talhoes, dadosTemporais, requestApiAnalysis, fetchDadosTemporais, isLoading, localizacoes
   } = useAppStore();
 
   const [selectedTalhaoId, setSelectedTalhaoId] = useState<number | null>(
@@ -28,55 +49,47 @@ export function AnaliseScreen({ navigation }: any) {
 
   const [activeTab, setActiveTab] = useState<'satveg' | 'nasa'>('satveg');
 
-  // Form states for NASA Power
-  const [dataInicio, setDataInicio] = useState('2025-01-01');
-  const [dataFim, setDataFim] = useState('2026-01-15');
-
-  // Filter analyses for the selected Talhão & Sort recent first (Memoized to prevent lag)
-  const talhaoSatvegs = useMemo(() => 
-    [...satvegs]
-      .filter(s => s.idTalhao === selectedTalhaoId)
-      .sort((a, b) => b.id - a.id),
-    [satvegs, selectedTalhaoId]
-  );
-
-  const talhaoNasapowers = useMemo(() => 
-    [...nasapowers]
-      .filter(n => n.idTalhao === selectedTalhaoId)
-      .sort((a, b) => b.id - a.id),
-    [nasapowers, selectedTalhaoId]
-  );
-
-  const handleRunSatVeg = async () => {
-    if (!selectedTalhaoId) {
-      Alert.alert('Erro', 'Selecione um talhão primeiro.');
-      return;
+  // Ao selecionar um talhão, busca os dados temporais do backend
+  React.useEffect(() => {
+    if (selectedTalhaoId) {
+      fetchDadosTemporais(selectedTalhaoId);
     }
-    const res = await addSatVeg(selectedTalhaoId);
-    if (res) {
-      Alert.alert('Sucesso', 'Análise SATveg concluída com sucesso!');
-    } else {
-      Alert.alert('Erro', 'Ocorreu um erro ao processar os dados do SATveg.');
-    }
+  }, [selectedTalhaoId]);
+
+  const handleRunApi = async (tipoApiNome: string, tipoParam: string, nomeExibicao: string) => {
+    if (!selectedTalhaoId) return;
+    const res = await requestApiAnalysis({ tipoParam, tipoApiNome, idTalhao: selectedTalhaoId });
+    if (res) Alert.alert('Sucesso', `Análise ${nomeExibicao} iniciada! Os dados temporais foram atualizados.`);
   };
 
-  const handleRunNasaPower = async () => {
-    if (!selectedTalhaoId) {
-      Alert.alert('Erro', 'Selecione um talhão primeiro.');
-      return;
-    }
-    
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(dataInicio) || !dateRegex.test(dataFim)) {
-      Alert.alert('Erro', 'As datas devem estar no formato AAAA-MM-DD.');
-      return;
-    }
-
-    const res = await addNasaPower(selectedTalhaoId, dataInicio, dataFim);
-    if (res) {
-      Alert.alert('Sucesso', 'Análise NASA Power concluída com sucesso!');
-    } else {
-      Alert.alert('Erro', 'Ocorreu um erro ao processar os dados da NASA.');
+  const API_CONFIGS: Record<'satveg' | 'nasa', ApiConfig> = {
+    satveg: {
+      tipoApiNome: "SATVEG",
+      type: "satveg",
+      title: "🛰️ Monitoramento de Índice de Vegetação (NDVI)",
+      description: "Conecta com a série histórica de satélite da Embrapa SATveg usando a latitude e longitude do talhão para monitorar a saúde biológica da plantação.",
+      buttonIcon: "sync-alt",
+      buttonText: "Solicitar Telemetria SATveg",
+      sectionHeading: "Dados de Vegetação Atuais",
+      emptyMessage: "Nenhum dado temporal encontrado para este talhão.",
+      subtitleGrafico: "Gráfico de NDVI",
+      tipoParam: "NDVI",
+      nomeExibicao: "SATveg",
+    },
+    nasa: {
+      tipoApiNome: "NASAPOWER",
+      type: "nasa",
+      title: "☀️ Análise de Precipitação (NASA Power)",
+      description: "Obtém dados climatológicos diários de precipitação (chuva em mm) diretamente dos satélites meteorológicos da NASA automaticamente (de 2020 até hoje).",
+      buttonIcon: "cloud-download-alt",
+      buttonText: "Solicitar Clima NASA",
+      buttonColor: Colors.info,
+      buttonTextColor: Colors.textPrimary,
+      sectionHeading: "Dados Climáticos Atuais",
+      emptyMessage: "Nenhum dado climático encontrado para este talhão.",
+      subtitleGrafico: "Precipitação Corrigida",
+      tipoParam: "PRECTOTCORR",
+      nomeExibicao: "NASA Power",
     }
   };
 
@@ -119,29 +132,20 @@ export function AnaliseScreen({ navigation }: any) {
             <Text style={styles.emptyTitle}>Sem Talhão Selecionado</Text>
             <Text style={styles.emptySubtitle}>Cadastre ou selecione um talhão para iniciar a telemetria espacial.</Text>
           </View>
-        ) : activeTab === 'satveg' ? (
-          <SatVegPanel
+        ) : activeTab ? (
+          <AnalisePanel
+            {...API_CONFIGS[activeTab]}
             selectedTalhao={selectedTalhao}
             selectedLoc={selectedLoc}
-            onRunSatVeg={handleRunSatVeg}
-            talhaoSatvegs={talhaoSatvegs}
-            onDeleteSatVeg={deleteSatVeg}
+            onRunApi={() => handleRunApi(
+              API_CONFIGS[activeTab].tipoApiNome, 
+              API_CONFIGS[activeTab].tipoParam, 
+              API_CONFIGS[activeTab].nomeExibicao
+            )}
+            dadosTemporais={dadosTemporais}
             navigation={navigation}
           />
-        ) : (
-          <NasaPowerPanel
-            selectedTalhao={selectedTalhao}
-            selectedLoc={selectedLoc}
-            dataInicio={dataInicio}
-            setDataInicio={setDataInicio}
-            dataFim={dataFim}
-            setDataFim={setDataFim}
-            onRunNasaPower={handleRunNasaPower}
-            talhaoNasapowers={talhaoNasapowers}
-            onDeleteNasaPower={deleteNasaPower}
-            navigation={navigation}
-          />
-        )}
+        ) : null}
       </View>
     </View>
   );

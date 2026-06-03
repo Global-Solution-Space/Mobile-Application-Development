@@ -4,36 +4,51 @@
 // ═══════════════════════════════════════════════════════════════
 
 import React from 'react';
-import { View, TextInput, StyleSheet, TextInputProps, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TextInputProps, TouchableOpacity } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 
 interface FormInputProps extends TextInputProps {
-  iconName: string;
-  /** Ícone adicional à direita (ex: eye/eye-slash para senha) */
+  iconName?: string;
+  label?: string;
   rightIcon?: string;
   onRightIconPress?: () => void;
 }
 
-export function FormInput({ iconName, rightIcon, onRightIconPress, style, ...rest }: FormInputProps) {
+export function FormInput({ iconName, label, rightIcon, onRightIconPress, style, ...rest }: FormInputProps) {
   return (
-    <View style={styles.container}>
-      <FontAwesome5 name={iconName} size={16} color={Colors.textMuted} style={styles.icon} />
-      <TextInput
-        style={[styles.input, style]}
-        placeholderTextColor={Colors.textMuted}
-        {...rest}
-      />
-      {rightIcon && onRightIconPress ? (
-        <TouchableOpacity onPress={onRightIconPress} style={styles.rightBtn}>
-          <FontAwesome5 name={rightIcon} size={16} color={Colors.textMuted} />
-        </TouchableOpacity>
-      ) : null}
+    <View style={styles.wrapper}>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
+      <View style={styles.container}>
+        {iconName ? (
+          <FontAwesome5 name={iconName} size={16} color={Colors.textMuted} style={styles.icon} />
+        ) : null}
+        <TextInput
+          style={[styles.input, style]}
+          placeholderTextColor={Colors.textMuted}
+          {...rest}
+        />
+        {rightIcon && onRightIconPress ? (
+          <TouchableOpacity onPress={onRightIconPress} style={styles.rightBtn}>
+            <FontAwesome5 name={rightIcon} size={16} color={Colors.textMuted} />
+          </TouchableOpacity>
+        ) : null}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    marginBottom: 14,
+  },
+  label: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+    marginBottom: 6,
+    marginLeft: 2,
+  },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -42,7 +57,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     paddingHorizontal: 14,
-    marginBottom: 14,
     height: 52,
   },
   icon: {

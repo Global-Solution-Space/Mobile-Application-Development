@@ -10,6 +10,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
+import { Header } from '../../components/Header';
 
 const VERSAO = '1.0.0';
 const ANO = '2026';
@@ -39,18 +40,7 @@ export function SobreScreen() {
   return (
     <View style={styles.container}>
 
-      {/* ── HEADER ── */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <FontAwesome5 name="arrow-left" size={14} color="#ffffff99" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Sobre o Terra Nova</Text>
-        <View style={{ width: 32 }} />
-      </View>
+      <Header title="Sobre o Terra Nova" showBackButton />
 
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -182,23 +172,6 @@ export function SobreScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bgPrimary },
 
-  // header
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 0.5, borderBottomColor: '#ffffff14',
-  },
-  backBtn: {
-    width: 32, height: 32, borderRadius: 10,
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 0.5, borderColor: '#ffffff14',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  headerTitle: {
-    flex: 1, textAlign: 'center',
-    color: '#fff', fontSize: 16, fontWeight: '600',
-  },
-
   scroll: { paddingBottom: 48 },
 
   // hero
@@ -216,7 +189,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 4,
   },
-  appName: { color: '#fff', fontSize: 26, fontWeight: '700', letterSpacing: 1.5 },
+  appName: { color: Colors.textPrimary, fontSize: 26, fontWeight: '700', letterSpacing: 1.5 },
   appTagline: { color: Colors.textSecondary, fontSize: 13, textAlign: 'center', paddingHorizontal: 32 },
   versaoBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -254,7 +227,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)',
     alignItems: 'center',
   },
-  themeTitle: { color: '#fff', fontSize: 15, fontWeight: '700', marginBottom: 8 },
+  themeTitle: { color: Colors.textPrimary, fontSize: 15, fontWeight: '700', marginBottom: 8 },
   themeDesc: { color: Colors.textSecondary, fontSize: 13, lineHeight: 20, textAlign: 'center' },
 
   // ODS
@@ -266,7 +239,7 @@ const styles = StyleSheet.create({
     width: 36, height: 36, borderRadius: 8,
     alignItems: 'center', justifyContent: 'center',
   },
-  odsNumText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  odsNumText: { color: Colors.textPrimary, fontSize: 14, fontWeight: '700' },
   odsLabel: { color: Colors.textSecondary, fontSize: 13, flex: 1 },
 
   // tecnologias
@@ -281,7 +254,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5, borderColor: '#ffffff14',
     alignItems: 'center', justifyContent: 'center',
   },
-  techLabel: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  techLabel: { color: Colors.textPrimary, fontSize: 13, fontWeight: '600' },
   techDesc: { color: Colors.textMuted, fontSize: 11, marginTop: 2 },
 
   // disciplina accordion
@@ -295,7 +268,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     gap: 10, padding: 14,
   },
-  discTitle: { flex: 1, color: '#fff', fontSize: 13, fontWeight: '600' },
+  discTitle: { flex: 1, color: Colors.textPrimary, fontSize: 13, fontWeight: '600' },
   discBody: { paddingHorizontal: 14, paddingBottom: 14, gap: 6 },
   discText: { color: Colors.textSecondary, fontSize: 13 },
 
@@ -310,6 +283,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent, opacity: 0.4,
     marginBottom: 10,
   },
-  footerText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  footerText: { color: Colors.textPrimary, fontSize: 14, fontWeight: '600' },
   footerSub: { color: Colors.textMuted, fontSize: 12 },
 });

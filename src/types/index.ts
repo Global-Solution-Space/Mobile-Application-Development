@@ -62,33 +62,28 @@ export interface Talhao {
   _links?: HateoasLinks;
 }
 
-export interface SatVeg {
+export interface DadoTemporal {
+  idDado: number;
+  dataLeitura: string;
+  valor: number;
+  idTalhao: number;
+  idReqApi: number;
+  tipoApiNome: string;
+  tipoParam: string;
+}
+
+export interface ReqApiPayload {
+  tipoParam: string;
+  tipoApiNome: string;
+  idTalhao: number;
+}
+
+export interface ReqApi {
   id: number;
-  tipoPerfil: string;
-  dataAnalise?: string;
-  dados?: { [date: string]: number };
-  idTalhao: number;
-  _links?: HateoasLinks;
-}
-
-export interface SatVegRequestPayload {
-  idTalhao: number;
-}
-
-export interface NasaPower {
-  id: number;
-  dataInicio: string;
-  dataFim: string;
-  parametro: string;
-  dataAnalise?: string;
-  dados?: { [date: string]: number };
-  idTalhao: number;
-  _links?: HateoasLinks;
-}
-
-export interface NasaPowerRequestPayload {
-  dataInicio: string;
-  dataFim: string;
+  tipoParam: string;
+  dataAnalise: string;
+  tipoApiNome: string;
+  totalDados: number;
   idTalhao: number;
 }
 
@@ -112,3 +107,32 @@ export interface LogAtividade {
   usuario: string;
   timestamp: string;
 }
+
+export interface Tarefa {
+  id: string;
+  titulo: string;
+  prioridade: string;
+  talhao: string;
+  concluida: boolean;
+}
+
+export type RootStackParamList = {
+  Login: undefined;
+  Register: undefined;
+  Tabs: undefined;
+  Propriedades: undefined;
+  Logs: undefined;
+  Tarefas: undefined;
+  EditarPerfil: undefined;
+  Faq: undefined;
+  Sobre: undefined;
+  Alertas: undefined;
+  CriarTalhao: undefined;
+  AnaliseDetalhes: {
+    type: 'nasa' | 'satveg';
+    id: number;
+    title: string;
+    subtitle: string;
+    dados: Record<string, number>;
+  };
+};
