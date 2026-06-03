@@ -1,40 +1,36 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../theme/colors';
 import { useAppStore } from '../../store/useAppStore';
 
 export function PerfilScreen() {
   const navigation = useNavigation() as any;
+  const insets = useSafeAreaInsets();
   
-  const { currentUser, lotes, estufas, colheitas, logout } = useAppStore() as any;
+  const { currentUser, talhoes, propriedades, telefones, logout } = useAppStore() as any;
 
-  const totalKg = colheitas.reduce((soma: number, c: any) => soma + c.quantidadeKg, 0);
+  const phone = telefones.find((t: any) => t.idProdutor === currentUser?.id);
+  const phoneFormatted = phone ? `(${phone.ddd}) ${phone.numero}` : 'Não cadastrado';
 
   const handleLogout = () => {
     logout();
   };
 
+  const statusBarHeight = Platform.OS === 'android'
+    ? (StatusBar.currentHeight || insets.top || 30)
+    : insets.top;
+
   return (
     <ScrollView style={styles.container}>
       {/* CABEÇALHO DO PERFIL */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: statusBarHeight + 30 }]}>
         <View style={styles.avatarBox}>
           <FontAwesome5 name="user" size={32} color={Colors.accent} />
         </View>
         <Text style={styles.userName}>{currentUser?.nome}</Text>
-        <View style={styles.roleBadge}>
-          <Text style={styles.roleText}>Produtor(a) Chefe</Text>
-        </View>
-        
-        <View style={styles.tagsRow}>
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>{currentUser?.base || 'Sede Terra Nova'}</Text>
-          </View>
-          <View style={styles.tag}><Text style={styles.tagText}>Cultivo Sustentável</Text></View>
-          <View style={styles.tag}><Text style={styles.tagText}>Acesso Padrão</Text></View>
-        </View>
 
         <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('EditarPerfil')}>
           <FontAwesome5 name="edit" size={12} color={Colors.textPrimary} />
@@ -45,16 +41,12 @@ export function PerfilScreen() {
       {/* ESTATÍSTICAS DINÂMICAS */}
       <View style={styles.statsContainer}>
         <View style={styles.statBox}>
-          <Text style={styles.statNum}>{lotes.length}</Text>
-          <Text style={styles.statLabel}>Lotes ativos</Text>
+          <Text style={styles.statNum}>{talhoes.length}</Text>
+          <Text style={styles.statLabel}>Talhões ativos</Text>
         </View>
         <View style={styles.statBox}>
-          <Text style={styles.statNum}>{totalKg.toFixed(1)}</Text>
-          <Text style={styles.statLabel}>Kg Colhidos</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statNum}>{estufas.length}</Text>
-          <Text style={styles.statLabel}>Estufas</Text>
+          <Text style={styles.statNum}>{propriedades.length}</Text>
+          <Text style={styles.statLabel}>Propriedades</Text>
         </View>
       </View>
 
@@ -67,41 +59,26 @@ export function PerfilScreen() {
           <Text style={styles.infoValue}>{currentUser?.email}</Text>
         </View>
         <View style={styles.infoRow}>
-          <FontAwesome5 name="id-badge" size={14} color={Colors.textMuted} style={styles.infoIcon} />
-          <Text style={styles.infoLabel}>Matrícula</Text>
-          <Text style={styles.infoValue}>AST-2026</Text>
+          <FontAwesome5 name="phone" size={14} color={Colors.textMuted} style={styles.infoIcon} />
+          <Text style={styles.infoLabel}>Telefone</Text>
+          <Text style={styles.infoValue}>{phoneFormatted}</Text>
         </View>
-        <View style={styles.infoRow}>
-          <FontAwesome5 name="calendar-alt" size={14} color={Colors.textMuted} style={styles.infoIcon} />
-          <Text style={styles.infoLabel}>Membro desde</Text>
-          <Text style={styles.infoValue}>
-            {currentUser?.criadoEm ? new Date(currentUser.criadoEm).toLocaleDateString('pt-BR') : ''}
-          </Text>
-        </View>
+
       </View>
 
-      {/* CONFIGURAÇÕES E SUPORTE */}
+      {/* CONFIGURAÇÕES E AJUDA */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>CONFIGURAÇÕES E SUPORTE</Text>
+        <Text style={styles.sectionTitle}>CONFIGURAÇÕES E AJUDA</Text>
         
-       {/* Substitua o botão antigo por este: */}
-<TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('Alertas')}>
-  <Text style={styles.menuText}>Alertas da Estufa</Text>
-  <FontAwesome5 name="chevron-right" size={12} color={Colors.accent} />
-</TouchableOpacity>
+        <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('Alertas')}>
+          <Text style={styles.menuText}>Central de Alertas</Text>
+          <FontAwesome5 name="chevron-right" size={12} color={Colors.accent} />
+        </TouchableOpacity>
 
-        {/* 👇 AQUI ESTÁ O LINK CORRIGIDO PARA O FAQ 👇 */}
         <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('Faq')}>
           <Text style={styles.menuText}>Manual de Cultivo (FAQ)</Text>
           <FontAwesome5 name="chevron-right" size={12} color={Colors.accent} />
         </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('Suporte')}>
-  <Text style={styles.menuText}>Suporte da Base</Text>
-  <FontAwesome5 name="chevron-right" size={12} color={Colors.accent} />
-</TouchableOpacity>
-
-        {/* 👇 AQUI ESTÁ O LINK PARA O SOBRE 👇 */}
         <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('Sobre')}>
           <Text style={styles.menuText}>Sobre o Terra Nova</Text>
           <FontAwesome5 name="chevron-right" size={12} color={Colors.accent} />
@@ -120,14 +97,9 @@ export function PerfilScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bgPrimary },
-  header: { alignItems: 'center', paddingTop: 30, paddingBottom: 20 },
+  header: { alignItems: 'center', paddingBottom: 20 },
   avatarBox: { width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: Colors.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   userName: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
-  roleBadge: { backgroundColor: 'rgba(16, 185, 129, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginBottom: 12 },
-  roleText: { color: Colors.accent, fontSize: 12, fontWeight: '600' },
-  tagsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  tag: { backgroundColor: Colors.bgSecondary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: Colors.border },
-  tagText: { color: Colors.textSecondary, fontSize: 11 },
   editBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: Colors.textMuted },
   editBtnText: { color: Colors.textPrimary, fontSize: 13, fontWeight: '600' },
   

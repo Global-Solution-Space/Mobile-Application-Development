@@ -27,7 +27,7 @@ export function TarefasScreen() {
       id: Date.now().toString(),
       titulo: titulo,
       prioridade: prioridade,
-      estufa: 'Geral',
+      talhao: 'Geral',
       concluida: false,
     });
 
@@ -63,7 +63,7 @@ export function TarefasScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="Ex: Verificar bomba de irrigação..."
+              placeholder="Ex: Verificar sensores do talhão..."
               placeholderTextColor="#64748B"
               value={titulo}
               onChangeText={setTitulo}
@@ -112,7 +112,7 @@ export function TarefasScreen() {
             <View style={styles.taskContent}>
               <Text style={styles.taskTitle}>{tarefa.titulo}</Text>
               <View style={styles.taskMeta}>
-                <Text style={styles.metaText}>{tarefa.estufaNome || tarefa.estufa || 'Geral'}</Text>
+                <Text style={styles.metaText}>{tarefa.talhaoNome || tarefa.talhao || 'Geral'}</Text>
                 <Text style={styles.metaDot}>•</Text>
                 <Text style={[
                   styles.metaText, 

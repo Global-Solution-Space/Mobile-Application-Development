@@ -19,7 +19,7 @@ const TECNOLOGIAS = [
   { icon: 'database',      label: 'API REST Java',      desc: 'Backend com Spring Boot' },
   { icon: 'satellite',     label: 'Dados de Satélite',  desc: 'Monitoramento geoespacial' },
   { icon: 'cloud',         label: 'Cloud Deploy',       desc: 'Infraestrutura em nuvem' },
-  { icon: 'shield-alt',    label: 'JWT Auth',           desc: 'Autenticação segura' },
+  { icon: 'shield-alt',    label: 'Zustand Store',      desc: 'Gerenciamento local' },
 ];
 
 const ODS = [
@@ -78,12 +78,12 @@ export function SobreScreen() {
           <View style={styles.descCard}>
             <Text style={styles.descText}>
               O Terra Nova é uma plataforma de gestão agrícola inteligente que
-              conecta a exploração espacial à produção de alimentos na Terra.
+              conecta a inovação agrotech à produção de alimentos na Terra.
             </Text>
             <Text style={styles.descText}>
               Utilizando dados de satélites orbitais, o sistema monitora em
-              tempo real a saúde das estufas, detecta anomalias climáticas,
-              controla o estoque de insumos e agenda tarefas de manutenção —
+              tempo real a saúde dos talhões, detecta anomalias climáticas,
+              e emite alertas preventivos de manejo —
               tudo em um único aplicativo.
             </Text>
           </View>
@@ -94,12 +94,9 @@ export function SobreScreen() {
           <Text style={styles.sectionTitle}>TEMA — GLOBAL SOLUTION 2026/1</Text>
           <View style={styles.themeCard}>
             <FontAwesome5 name="rocket" size={22} color={Colors.accent} style={{ marginBottom: 10 }} />
-            <Text style={styles.themeTitle}>🚀 O Espaço é a Nova Fronteira</Text>
-            <Text style={styles.themeDesc}>
-              Satélites monitoram o clima, orientam o agronegócio, evitam
-              desastres e conectam regiões remotas. O Terra Nova transforma
-              esses dados orbitais em ações práticas para agricultores e
-              produtores de alimentos.
+            <Text style={styles.themeTitle}>🌱 O Futuro é a Agricultura de Precisão</Text>
+            <Text style={styles.themeTitle}>
+              Em um mundo em constante mudança, ferramentas inteligentes como o Terra Nova garantem o máximo de rendimento usando tecnologias modernas de monitoramento.
             </Text>
           </View>
         </View>

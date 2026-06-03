@@ -14,7 +14,6 @@ const tipoConfig: Record<TipoLog, { icon: string; color: string; label: string }
   criacao: { icon: 'plus-circle', color: Colors.success, label: 'Criação' },
   edicao: { icon: 'edit', color: Colors.info, label: 'Edição' },
   exclusao: { icon: 'trash', color: Colors.danger, label: 'Exclusão' },
-  colheita: { icon: 'leaf', color: Colors.accent, label: 'Colheita' },
   alerta: { icon: 'exclamation-triangle', color: Colors.warning, label: 'Alerta' },
   sistema: { icon: 'cog', color: Colors.textSecondary, label: 'Sistema' },
 };

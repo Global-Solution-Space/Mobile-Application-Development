@@ -7,15 +7,11 @@ import { useNavigation } from '@react-navigation/native'; // 👈 adiciona
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 const FAQ_DATA = [
   {
     id: '1',
-    pergunta: 'O que significa quando um Lote está em status "Crítico"?',
-    resposta: 'Indica que os sensores ou a análise de satélite detectaram anomalias graves, como estresse hídrico agudo, pragas ou temperatura extrema. Recomenda-se verificar o lote imediatamente.'
+    pergunta: 'O que significa quando um Talhão está em status "Crítico"?',
+    resposta: 'Indica que os sensores ou a análise de satélite detectaram anomalias graves, como estresse hídrico agudo, pragas ou temperatura extrema. Recomenda-se verificar o talhão imediatamente.'
   },
   {
     id: '2',
@@ -24,13 +20,13 @@ const FAQ_DATA = [
   },
   {
     id: '3',
-    pergunta: 'Posso alterar a quantidade mínima de um insumo?',
-    resposta: 'Sim! Acesse a aba "Estoque", toque no ícone de lápis do insumo desejado e ajuste o valor no campo "Alerta de Estoque Baixo". O sistema te avisará quando a quantidade cair abaixo desse número.'
+    pergunta: 'Posso criar uma Propriedade direto na tela de Talhões?',
+    resposta: 'Sim! Através da criação expressa, basta tocar no ícone "+", e o formulário abrirá um modal para criação sem precisar sair da tela.'
   },
   {
     id: '4',
-    pergunta: 'O que fazer se o sistema de irrigação falhar?',
-    resposta: 'O aplicativo emitirá um Evento Crítico. Você pode acionar a irrigação manual de emergência indo até as ações rápidas do Lote específico ou registrando a irrigação manual no menu.'
+    pergunta: 'Como funcionam os alertas de satélite?',
+    resposta: 'O sistema analisa dados do SatVeg e NasaPower para detectar anomalias climáticas ou de vegetação, disparando Alertas Agrícolas automaticamente para o seu painel.'
   },
   {
     id: '5',
@@ -68,7 +64,7 @@ export function FaqScreen() {
         <View style={styles.infoBox}>
           <FontAwesome5 name="info-circle" size={20} color={Colors.accent} />
           <Text style={styles.infoText}>
-            Encontre respostas rápidas sobre o uso do Terra Nova e o manejo das suas estufas inteligentes.
+            Encontre respostas rápidas sobre o uso do Terra Nova e o manejo das suas propriedades.
           </Text>
         </View>
 

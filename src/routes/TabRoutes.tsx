@@ -3,9 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { FontAwesome5 } from '@expo/vector-icons';
 
 import { HomeScreen } from '../screens/Home/HomeScreen';
-import { LotesScreen } from '../screens/Lotes/LotesScreen';
-import { CadastroScreen } from '../screens/Cadastro/CadastroScreen';
-import { EstoqueScreen } from '../screens/Estoque/EstoqueScreen';
+import { TalhoesScreen } from '../screens/Talhoes/TalhoesScreen';
+import { AnaliseScreen } from '../screens/Analise/AnaliseScreen';
 import { PerfilScreen } from '../screens/Perfil/PerfilScreen';
 
 const Tab = createBottomTabNavigator();
@@ -32,19 +31,14 @@ export function TabRoutes() {
             options={{ tabBarIcon: ({ color }) => <FontAwesome5 name="home" size={24} color={color} /> }} 
         />
         <Tab.Screen 
-            name="Lotes" 
-            component={LotesScreen} 
+            name="Talhões" 
+            component={TalhoesScreen} 
             options={{ tabBarIcon: ({ color }) => <FontAwesome5 name="th-large" size={24} color={color} /> }} 
         />
         <Tab.Screen 
-            name="Cadastrar" 
-            component={CadastroScreen} 
-            options={{ tabBarIcon: ({ color }) => <FontAwesome5 name="plus-circle" size={28} color={color} /> }} 
-        />
-        <Tab.Screen 
-            name="Estoque" 
-            component={EstoqueScreen} 
-            options={{ tabBarIcon: ({ color }) => <FontAwesome5 name="boxes" size={24} color={color} /> }} 
+            name="Analise" 
+            component={AnaliseScreen} 
+            options={{ tabBarIcon: ({ color }) => <FontAwesome5 name="chart-bar" size={24} color={color} /> }} 
         />
         <Tab.Screen 
             name="Perfil" 

@@ -20,10 +20,12 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [ddd, setDdd] = useState('');
+  const [telefone, setTelefone] = useState('');
 
   const register = useAppStore(s => s.register);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!nome.trim() || !email.trim() || !senha.trim()) {
       Alert.alert('Campos obrigatórios', 'Preencha todos os campos para criar sua conta.');
       return;
@@ -36,7 +38,7 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
       Alert.alert('Senha fraca', 'A senha deve ter pelo menos 6 caracteres.');
       return;
     }
-    const ok = register(nome.trim(), email.trim(), senha);
+    const ok = await register(nome.trim(), email.trim(), senha, ddd.trim(), telefone.trim());
     if (!ok) {
       Alert.alert('E-mail em uso', 'Este e-mail já está cadastrado no sistema.');
     }
@@ -85,6 +87,32 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
               keyboardType="email-address"
               autoCapitalize="none"
             />
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={[styles.inputGroup, { flex: 0.3 }]}>
+              <TextInput
+                style={styles.input}
+                placeholder="DDD"
+                placeholderTextColor={Colors.textMuted}
+                value={ddd}
+                onChangeText={setDdd}
+                keyboardType="numeric"
+                maxLength={2}
+              />
+            </View>
+            <View style={[styles.inputGroup, { flex: 0.7 }]}>
+              <FontAwesome5 name="phone" size={16} color={Colors.textMuted} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Telefone"
+                placeholderTextColor={Colors.textMuted}
+                value={telefone}
+                onChangeText={setTelefone}
+                keyboardType="numeric"
+                maxLength={10}
+              />
+            </View>
           </View>
 
           <View style={styles.inputGroup}>

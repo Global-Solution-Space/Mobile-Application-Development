@@ -1,78 +1,109 @@
 // ═══════════════════════════════════════════════════════════════
-// Terra Nova — Definições de Tipos (Dicionário do Sistema)
+// Terra Nova — Definições de Tipos (API Java Spring Boot)
 // ═══════════════════════════════════════════════════════════════
 
-export interface User {
-  id: string;
+export interface HateoasLink { href: string; }
+export interface HateoasLinks { [key: string]: HateoasLink; }
+
+export interface PaginatedResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+}
+
+export interface Produtor {
+  id: number;
   nome: string;
   email: string;
   senha?: string;
-  base?: string; // Adicionado para o seu Perfil!
-  criadoEm: string;
+  _links?: HateoasLinks;
 }
 
-export type StatusLote = 'Saudável' | 'Atenção' | 'Crítico';
-export type TipoCultura = 'Tomate' | 'Alface' | 'Batata' | 'Morango' | 'Espinafre' | 'Cenoura' | string;
-
-export interface Lote {
-  id: string;
-  tipoCultura: TipoCultura;
-  estufaId?: string;
-  estufaNome?: string;
-  dataPlantio: string;
-  fase: string;
-  status: StatusLote;
-  quantidade: number;
-  observacoes?: string;
-  criadoPor: string;
-  atualizadoEm: string;
+export interface Telefone {
+  id: number;
+  ddd: string;
+  numero: string;
+  idProdutor: number;
+  _links?: HateoasLinks;
 }
 
-export interface RegistroIrrigacao {
-  id: string;
-  lote_id: string;
-  quantidade_agua_ml: number;
-  data_hora: string;
-  tipo_acionamento: string;
+export interface Localizacao {
+  id: number;
+  locLatitude: number;
+  locLongitude: number;
+  _links?: HateoasLinks;
 }
 
-export interface Estufa {
-  id: string;
+export interface Propriedade {
+  id: number;
   nome: string;
-  tipo: string;
-  status: string;
-  capacidade?: number;
-  lotesAtivos?: number;
-  temperatura?: number;
-  umidade?: number;
-  nivelAgua?: number;
-  luminosidade?: number;
-  co2?: number;
+  tamanhoTotal: number;
+  idProdutor: number;
+  idLocalizacao: number;
+  _links?: HateoasLinks;
 }
 
-export interface Insumo {
-  id: string;
-  nome: string;
-  categoria?: string;
-  tipo?: string;
-  quantidade: number;
-  unidade: string;
-  minimo?: number;
-  quantidadeMinima?: number;
-  atualizadoEm?: string;
+export interface TipoPlantacao {
+  id: number;
+  tipoPlant: string;
+  _links?: HateoasLinks;
 }
 
-export interface Colheita {
-  id: string;
-  loteId: string;
-  tipoCultura: string;
-  estufaNome?: string;
-  dataColheita: string;
-  quantidadeKg: number;
-  qualidade: string;
+export interface Talhao {
+  id: number;
+  nomeTalhao: string;
+  volumArea: number;
+  idTipoPlantacao: number;
+  idPropriedade: number;
+  idLocalizacao: number;
+  status?: 'NORMAL' | 'CRITICO' | 'ATENCAO' | string;
+  _links?: HateoasLinks;
 }
 
-export type TipoLog = 'criacao' | 'edicao' | 'exclusao' | 'colheita' | 'alerta' | 'sistema';
+export interface SatVeg {
+  id: number;
+  tipoPerfil: string;
+  dataAnalise?: string;
+  dados?: { [date: string]: number };
+  idTalhao: number;
+  _links?: HateoasLinks;
+}
+
+export interface SatVegRequestPayload {
+  idTalhao: number;
+}
+
+export interface NasaPower {
+  id: number;
+  dataInicio: string;
+  dataFim: string;
+  parametro: string;
+  dataAnalise?: string;
+  dados?: { [date: string]: number };
+  idTalhao: number;
+  _links?: HateoasLinks;
+}
+
+export interface NasaPowerRequestPayload {
+  dataInicio: string;
+  dataFim: string;
+  idTalhao: number;
+}
+
+export interface AlertaAgricola {
+  id: number;
+  titulo: string;
+  descricao: string;
+  nivelAlerta: 'ALTO' | 'MEDIO' | 'BAIXO' | string;
+  resolvido: 'S' | 'N';
+  dataAlerta?: string;
+  idTalhao: number;
+  _links?: HateoasLinks;
+}
+
+export type TipoLog = 'criacao' | 'edicao' | 'exclusao' | 'alerta' | 'sistema';
 
 export interface LogAtividade {
   id: string;
@@ -80,29 +111,4 @@ export interface LogAtividade {
   mensagem: string;
   usuario: string;
   timestamp: string;
-}
-
-export interface Tarefa {
-  id: string;
-  titulo: string;
-  descricao: string;
-  estufaId?: string;
-  estufaNome?: string;
-  dataAgendada: string;
-  prioridade: 'Baixa' | 'Média' | 'Alta' | 'Urgente' | string;
-  concluida: boolean;
-  criadaEm: string;
-}
-
-export type TipoEvento = 'falta_energia' | 'praga_detectada' | 'falha_irrigacao' | 'surto_temperatura' | 'contaminacao' | string;
-
-export interface EventoCritico {
-  id: string;
-  tipo: TipoEvento;
-  titulo: string;
-  descricao: string;
-  severidade: 'Alta' | 'Crítica' | string;
-  estufasAfetadas: string[];
-  timestamp: string;
-  resolvido: boolean;
 }

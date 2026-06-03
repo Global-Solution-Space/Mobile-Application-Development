@@ -24,12 +24,12 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
 
   const login = useAppStore(s => s.login);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email.trim() || !senha.trim()) {
       Alert.alert('Campos obrigatórios', 'Preencha e-mail e senha para acessar.');
       return;
     }
-    const ok = login(email.trim(), senha);
+    const ok = await login(email.trim(), senha);
     if (!ok) {
       Alert.alert('Falha no login', 'E-mail ou senha incorretos. Tente novamente.');
     }

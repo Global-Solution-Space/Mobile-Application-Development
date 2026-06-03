@@ -10,10 +10,13 @@ import { useAppStore } from '../../store/useAppStore';
 
 export function EditarPerfilScreen() {
   const navigation = useNavigation();
-  const { currentUser, updateProfile } = useAppStore() as any;
+  const { currentUser, telefones, updateProfile } = useAppStore() as any;
 
-  const [nome, setNome]                     = useState(currentUser.nome);
-  const [base, setBase]                     = useState(currentUser.base || '');
+  const phone = currentUser ? telefones.find((t: any) => t.idProdutor === currentUser.id) : null;
+
+  const [nome, setNome]                     = useState(currentUser?.nome || '');
+  const [ddd, setDdd]                       = useState(phone?.ddd || '');
+  const [telefone, setTelefone]             = useState(phone?.numero || '');
   const [novoEmail, setNovoEmail]           = useState('');
   const [novaSenha, setNovaSenha]           = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
@@ -44,11 +47,17 @@ export function EditarPerfilScreen() {
       return;
     }
 
-    const updates: Record<string, string> = { nome, base };
+    const updates: Record<string, string> = { nome };
     if (novoEmail) updates.email = novoEmail;
+    if (novaSenha && senhasIguais) updates.senha = novaSenha;
+
+    const telefoneUpdates = {
+      ddd: ddd.trim(),
+      numero: telefone.trim(),
+    };
 
     // Atualiza os dados no banco de dados global
-    updateProfile(updates);
+    updateProfile(updates, telefoneUpdates);
 
     // Na Web, o Alert do React Native bloqueia a navegação. 
     // Por isso, acionamos a saída da tela imediatamente!
@@ -105,14 +114,32 @@ export function EditarPerfilScreen() {
               placeholderTextColor={Colors.textMuted}
             />
 
-            <Text style={styles.label}>Planeta / Base</Text>
-            <TextInput
-              style={styles.input}
-              value={base}
-              onChangeText={setBase}
-              placeholder="Ex: Marte Alpha"
-              placeholderTextColor={Colors.textMuted}
-            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 0.3 }}>
+                <Text style={styles.label}>DDD</Text>
+                <TextInput
+                  style={styles.input}
+                  value={ddd}
+                  onChangeText={setDdd}
+                  placeholder="Ex: 11"
+                  placeholderTextColor={Colors.textMuted}
+                  keyboardType="numeric"
+                  maxLength={2}
+                />
+              </View>
+              <View style={{ flex: 0.7 }}>
+                <Text style={styles.label}>Telefone</Text>
+                <TextInput
+                  style={styles.input}
+                  value={telefone}
+                  onChangeText={setTelefone}
+                  placeholder="Ex: 999999999"
+                  placeholderTextColor={Colors.textMuted}
+                  keyboardType="numeric"
+                  maxLength={10}
+                />
+              </View>
+            </View>
           </View>
 
           {/* ── SEGURANÇA DA CONTA ── */}
