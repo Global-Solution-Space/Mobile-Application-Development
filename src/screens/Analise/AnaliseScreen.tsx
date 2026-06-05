@@ -2,7 +2,7 @@
 // Terra Nova — Análise de Satélite (SATveg & NASA Power)
 // ═══════════════════════════════════════════════════════════════
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   Alert, ActivityIndicator
@@ -10,10 +10,12 @@ import {
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Header } from '../../components/Header';
+import { useFocusPolling } from '../../hooks/useFocusPolling';
 import { TalhaoSelector } from '../../components/TalhaoSelector';
 import { TabSelector } from '../../components/TabSelector';
 import { AnalisePanel } from '../../components/AnalisePanel';
 import { useAppStore } from '../../store/useAppStore';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
@@ -35,12 +37,14 @@ export function AnaliseScreen({ navigation }: AnaliseScreenProps) {
 
   const [activeTab, setActiveTab] = useState<'satveg' | 'nasa'>('satveg');
 
-  // Ao selecionar um talhão, busca os dados temporais do backend
-  useEffect(() => {
-    if (selectedTalhaoId) {
-      fetchDadosTemporaisEHistórico(selectedTalhaoId);
-    }
+  const fetchTelemetry = useCallback(async () => {
+    if (!selectedTalhaoId) return;
+    const cached = useAppStore.getState().dadosTemporais;
+    const hasCachedData = cached.some(d => d.idTalhao === selectedTalhaoId);
+    await fetchDadosTemporaisEHistórico(selectedTalhaoId, hasCachedData).catch(() => {});
   }, [selectedTalhaoId]);
+
+  useFocusPolling(fetchTelemetry);
 
   const handleRunApi = async (tipoApiNome: string, tipoParam: string) => {
     if (!selectedTalhaoId) return;
@@ -61,6 +65,14 @@ export function AnaliseScreen({ navigation }: AnaliseScreenProps) {
   const selectedTalhao = talhoes.find(t => t.id === selectedTalhaoId);
   const selectedLoc = selectedTalhao ? localizacoes.find(l => l.id === selectedTalhao.idLocalizacao) : null;
 
+  const filteredDadosTemporais = useMemo(() => {
+    return dadosTemporais.filter(d => d.idTalhao === selectedTalhaoId);
+  }, [dadosTemporais, selectedTalhaoId]);
+
+  const filteredReqApis = useMemo(() => {
+    return reqApis.filter(r => r.idTalhao === selectedTalhaoId);
+  }, [reqApis, selectedTalhaoId]);
+
   return (
     <View style={styles.container}>
       <Header title="Análise do Talhão" />
@@ -72,40 +84,44 @@ export function AnaliseScreen({ navigation }: AnaliseScreenProps) {
         onSelect={setSelectedTalhaoId} 
       />
 
-      {/* Tab Switcher */}
-      <TabSelector 
-        activeTab={activeTab} 
-        onChange={setActiveTab} 
-      />
-
       <View style={{ flex: 1 }}>
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Colors.accent} />
             <Text style={styles.loadingText}>Processando integração geoespacial...</Text>
           </View>
-        ) : !selectedTalhaoId ? (
-          <View style={styles.emptyState}>
-            <FontAwesome5 name="seedling" size={48} color={Colors.textMuted} style={{ marginBottom: 12 }} />
-            <Text style={styles.emptyTitle}>Sem Talhão Selecionado</Text>
-            <Text style={styles.emptySubtitle}>Cadastre ou selecione um talhão para iniciar a telemetria espacial.</Text>
-          </View>
-        ) : activeTab ? (
-          <AnalisePanel
-            {...TELEMETRY_CONFIGS[activeTab]}
-            type={activeTab}
-            selectedTalhao={selectedTalhao}
-            selectedLoc={selectedLoc}
-            onRunApi={() => handleRunApi(
-              TELEMETRY_CONFIGS[activeTab].tipoApiNome, 
-              TELEMETRY_CONFIGS[activeTab].tipoParam, 
-            )}
-            dadosTemporais={dadosTemporais}
-            reqApis={reqApis}
-            navigation={navigation}
-            onDeleteAnalysis={handleDeleteAnalysis}
-          />
-        ) : null}
+        ) : (
+          <>
+            {/* Tab Switcher */}
+            <TabSelector 
+              activeTab={activeTab} 
+              onChange={setActiveTab} 
+            />
+
+            {!selectedTalhaoId ? (
+              <View style={styles.emptyState}>
+                <FontAwesome5 name="seedling" size={48} color={Colors.textMuted} style={{ marginBottom: 12 }} />
+                <Text style={styles.emptyTitle}>Sem Talhão Selecionado</Text>
+                <Text style={styles.emptySubtitle}>Cadastre ou selecione um talhão para iniciar a telemetria espacial.</Text>
+              </View>
+            ) : activeTab ? (
+              <AnalisePanel
+                {...TELEMETRY_CONFIGS[activeTab]}
+                type={activeTab}
+                selectedTalhao={selectedTalhao}
+                selectedLoc={selectedLoc}
+                onRunApi={() => handleRunApi(
+                  TELEMETRY_CONFIGS[activeTab].tipoApiNome, 
+                  TELEMETRY_CONFIGS[activeTab].tipoParam, 
+                )}
+                dadosTemporais={filteredDadosTemporais}
+                reqApis={filteredReqApis}
+                navigation={navigation}
+                onDeleteAnalysis={handleDeleteAnalysis}
+              />
+            ) : null}
+          </>
+        )}
       </View>
     </View>
   );

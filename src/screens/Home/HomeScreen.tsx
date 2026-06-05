@@ -3,7 +3,7 @@
 // Exibe alertas, métricas das propriedades, e simulador de eventos
 // ═══════════════════════════════════════════════════════════════
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions
 } from 'react-native';
@@ -17,6 +17,7 @@ import { Colors } from '../../theme/colors';
 import { useAppStore } from '../../store/useAppStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
+import { useScreenSync } from '../../hooks/useScreenSync';
 
 const { width } = Dimensions.get('window');
 
@@ -30,6 +31,8 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     alertas, resolverEvento,
     currentUser,
   } = useAppStore();
+
+  useScreenSync();
 
   const kpiData = useMemo(() => {
     const ativos = alertas.filter(a => a.resolvido === 'N');

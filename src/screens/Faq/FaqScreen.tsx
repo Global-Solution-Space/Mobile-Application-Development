@@ -3,14 +3,12 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, LayoutAnimation, Platform, UIManager,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Header } from '../../components/Header';
 import { FAQ_DATA } from '../../data/faq';
 
 export function FaqScreen() {
-  const navigation = useNavigation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {

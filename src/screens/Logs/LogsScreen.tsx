@@ -29,14 +29,7 @@ function timeAgo(ts: string) {
   return `${Math.floor(h / 24)}d atrás`;
 }
 
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../types';
-
-interface LogsScreenProps {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Logs'>;
-}
-
-export function LogsScreen({ navigation }: LogsScreenProps) {
+export function LogsScreen() {
   const { logs } = useAppStore();
 
   const renderItem = useCallback(({ item, index }: { item: LogAtividade; index: number }) => {

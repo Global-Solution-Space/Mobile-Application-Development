@@ -10,6 +10,15 @@ import {
 const uuid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
 const now = () => new Date().toISOString();
 
+// Controle global de concorrência para evitar requisições duplicadas simultâneas
+let activeFetchPromise: Promise<void> | null = null;
+const activeTelemetryPromises: Record<number, Promise<void> | undefined> = {};
+
+// Helper global para registrar erros de API no console sem duplicar os alertas exibidos pelo interceptor do Axios
+const handleApiError = (error: any, defaultMsg: string) => {
+  console.warn(`${defaultMsg}:`, error.message);
+};
+
 export interface AppStore {
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
@@ -29,7 +38,7 @@ export interface AppStore {
   reqApis: ReqApi[];
 
   // Initialization
-  fetchInitialData: () => Promise<void>;
+  fetchInitialData: (silent?: boolean) => Promise<void>;
 
   // Auth
   login: (email: string, senha?: string) => Promise<{ success: boolean; errorType?: 'auth' | 'network' }>;
@@ -50,7 +59,7 @@ export interface AppStore {
   addTipoPlantacao: (data: Omit<TipoPlantacao, 'id' | '_links'>) => Promise<TipoPlantacao | null>;
 
   requestApiAnalysis: (payload: ReqApiPayload) => Promise<boolean>;
-  fetchDadosTemporaisEHistórico: (idTalhao: number) => Promise<void>;
+  fetchDadosTemporaisEHistórico: (idTalhao: number, silent?: boolean) => Promise<void>;
   deleteReqApi: (id: number) => Promise<boolean>;
 
   updateAlerta: (id: number, data: Partial<AlertaAgricola>) => Promise<boolean>;
@@ -84,45 +93,57 @@ export const useAppStore = create<AppStore>()(
       addLog: (tipo, mensagem) => {
         const user = get().currentUser;
         const newLog: LogAtividade = { id: uuid(), tipo, mensagem, usuario: user?.nome || 'Sistema', timestamp: now() };
-        set(s => ({ logs: [newLog, ...s.logs] }));
+        set(s => ({ logs: [newLog, ...s.logs].slice(0, 100) }));
       },
 
-      fetchInitialData: async () => {
-        set({ isLoading: true });
-        try {
-          const user = get().currentUser;
-          if (!user) {
-            set({ isLoading: false });
-            return;
+      fetchInitialData: async (silent = false) => {
+        if (activeFetchPromise) {
+          return activeFetchPromise;
+        }
+
+        activeFetchPromise = (async () => {
+          if (!silent) set({ isLoading: true });
+          try {
+            const user = get().currentUser;
+            if (!user) {
+              if (!silent) set({ isLoading: false });
+              return;
+            }
+
+            // Busca os recursos rápidos e essenciais do usuário
+            const [propriedades, talhoes, alertas] = await Promise.all([
+              apiService.getPropriedadesDoProdutor(user.id),
+              apiService.getTalhoesDoProdutor(user.id),
+              apiService.getAlertasDoProdutor(user.id)
+            ]);
+
+            set({ propriedades, talhoes, alertas });
+
+            // Lazy Loading (Cache Inteligente): Carrega tabelas ausentes em paralelo
+            const state = get();
+            const cacheDependencies = [
+              { key: 'tiposPlantacao' as const, fetcher: apiService.getTiposPlantacao },
+              { key: 'localizacoes' as const, fetcher: apiService.getLocalizacoes },
+              { key: 'telefones' as const, fetcher: apiService.getTelefones }
+            ];
+
+            await Promise.all(
+              cacheDependencies
+                .filter(({ key }) => state[key].length === 0)
+                .map(({ key, fetcher }) => fetcher().then(data => set({ [key]: data } as Partial<AppStore>)))
+            );
+          } catch (error) {
+            console.error("Erro ao buscar dados iniciais:", error);
+            throw error;
+          } finally {
+            if (!silent) set({ isLoading: false });
           }
+        })();
 
-          // Busca os recursos rápidos e essenciais do usuário
-          const [propriedades, talhoes, alertas] = await Promise.all([
-            apiService.getPropriedadesDoProdutor(user.id),
-            apiService.getTalhoesDoProdutor(user.id),
-            apiService.getAlertasDoProdutor(user.id)
-          ]);
-
-          set({ propriedades, talhoes, alertas });
-
-          // Lazy Loading (Cache Inteligente): Carrega tabelas ausentes em paralelo
-          const state = get();
-          const cacheDependencies = [
-            { key: 'tiposPlantacao' as const, fetcher: apiService.getTiposPlantacao },
-            { key: 'localizacoes' as const, fetcher: apiService.getLocalizacoes },
-            { key: 'telefones' as const, fetcher: apiService.getTelefones }
-          ];
-
-          await Promise.all(
-            cacheDependencies
-              .filter(({ key }) => state[key].length === 0)
-              .map(({ key, fetcher }) => fetcher().then(data => set({ [key]: data } as Partial<AppStore>)))
-          );
-        } catch (error) {
-          console.error("Erro ao buscar dados iniciais:", error);
-          throw error;
+        try {
+          await activeFetchPromise;
         } finally {
-          set({ isLoading: false });
+          activeFetchPromise = null;
         }
       },
 
@@ -231,7 +252,7 @@ export const useAppStore = create<AppStore>()(
           set(s => ({ talhoes: [...s.talhoes, newTalhao] }));
           return true;
         } catch (error: any) {
-          console.warn("Add talhao error:", error.message);
+          handleApiError(error, "Erro ao cadastrar talhão");
           return false;
         } finally {
           set({ isLoading: false });
@@ -240,12 +261,19 @@ export const useAppStore = create<AppStore>()(
 
       updateTalhao: async (id, updates) => {
         set({ isLoading: true });
+
+        const talhaoToUpdate = get().talhoes.find(t => t.id === id);
+        if (!talhaoToUpdate) {
+          set({ isLoading: false });
+          return false;
+        }
+
         try {
           const updated = await apiService.updateTalhao(id, updates);
           set(s => ({ talhoes: s.talhoes.map(t => t.id === id ? updated : t) }));
           return true;
         } catch (error: any) {
-          console.warn("Update talhao error:", error.message);
+          handleApiError(error, "Erro ao atualizar talhão");
           return false;
         } finally {
           set({ isLoading: false });
@@ -277,7 +305,7 @@ export const useAppStore = create<AppStore>()(
           set(s => ({ propriedades: [...s.propriedades, res] }));
           return true;
         } catch(e: any) { 
-          console.warn(e.message);
+          handleApiError(e, "Erro ao cadastrar propriedade");
           return false;
         } finally { set({ isLoading: false }); }
       },
@@ -290,7 +318,7 @@ export const useAppStore = create<AppStore>()(
           set(s => ({ propriedades: s.propriedades.map(p => p.id === id ? updated : p) }));
           return true;
         } catch(e: any) { 
-          console.warn(e.message);
+          handleApiError(e, "Erro ao atualizar propriedade");
           return false;
         } finally { set({ isLoading: false }); }
       },
@@ -430,18 +458,34 @@ export const useAppStore = create<AppStore>()(
         }
       },
 
-      fetchDadosTemporaisEHistórico: async (idTalhao) => {
-        set({ isLoading: true });
+      fetchDadosTemporaisEHistórico: async (idTalhao, silent = false) => {
+        if (activeTelemetryPromises[idTalhao]) {
+          return activeTelemetryPromises[idTalhao];
+        }
+
+        activeTelemetryPromises[idTalhao] = (async () => {
+          if (!silent) set({ isLoading: true });
+          try {
+            const [dados, reqs] = await Promise.all([
+              apiService.getDadosTemporais(idTalhao),
+              apiService.getReqApisByTalhao(idTalhao)
+            ]);
+            const reqsWithTalhao = reqs.map(r => ({ ...r, idTalhao }));
+            set(state => ({
+              dadosTemporais: [...state.dadosTemporais.filter(d => d.idTalhao !== idTalhao), ...dados],
+              reqApis: [...state.reqApis.filter(r => r.idTalhao !== idTalhao), ...reqsWithTalhao]
+            }));
+          } catch (error: any) {
+            console.warn("Fetch Dados Temporais error:", error.message);
+          } finally {
+            if (!silent) set({ isLoading: false });
+          }
+        })();
+
         try {
-          const [dados, reqs] = await Promise.all([
-            apiService.getDadosTemporais(idTalhao),
-            apiService.getReqApisByTalhao(idTalhao)
-          ]);
-          set({ dadosTemporais: dados, reqApis: reqs });
-        } catch (error: any) {
-          console.warn("Fetch Dados Temporais error:", error.message);
+          await activeTelemetryPromises[idTalhao];
         } finally {
-          set({ isLoading: false });
+          delete activeTelemetryPromises[idTalhao];
         }
       },
 
@@ -468,16 +512,21 @@ export const useAppStore = create<AppStore>()(
       name: 'terranova-storage',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
-        // Fallback local persistence
+        // Fallback local persistence (Reidratação offline)
         currentUser: state.currentUser,
         isLoggedIn: state.isLoggedIn,
         logs: state.logs,
+        dadosTemporais: state.dadosTemporais,
+        reqApis: state.reqApis,
+        propriedades: state.propriedades,
+        talhoes: state.talhoes,
+        alertas: state.alertas,
       }),
       onRehydrateStorage: () => (state) => {
         // Quando o AsyncStorage terminar de carregar os dados salvos:
         if (state && state.isLoggedIn) {
           // Se o usuário já estava logado, dispara o fetch da API silenciosamente
-          state.fetchInitialData();
+          state.fetchInitialData(true);
         }
       }
     }

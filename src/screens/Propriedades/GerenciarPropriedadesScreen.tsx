@@ -3,10 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import React, { useState } from 'react';
-import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ScrollView, Alert
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Header } from '../../components/Header';
@@ -19,19 +16,9 @@ import { useAppStore } from '../../store/useAppStore';
 import { PropriedadeSchema } from '../../schemas';
 import { Propriedade } from '../../types';
 import { validarCoordenadasNoBrasil } from '../../utils/geolocation';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../types';
 
-interface GerenciarPropriedadesScreenProps {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'GerenciarPropriedades'>;
-}
-
-export function GerenciarPropriedadesScreen({ navigation }: GerenciarPropriedadesScreenProps) {
-  const {
-    propriedades, talhoes, localizacoes,
-    addPropriedade, updatePropriedade, deletePropriedade,
-    addLocalizacao, currentUser
-  } = useAppStore();
+export function GerenciarPropriedadesScreen() {
+  const { propriedades, talhoes, localizacoes, addPropriedade, updatePropriedade, deletePropriedade, addLocalizacao, currentUser } = useAppStore();
 
   const [editProp, setEditProp] = useState<Propriedade | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -96,6 +83,14 @@ export function GerenciarPropriedadesScreen({ navigation }: GerenciarPropriedade
     }
 
     if (editProp) {
+      // Validação local de encolhimento de propriedade
+      const talhoesNaProp = talhoes.filter(t => t.idPropriedade === editProp.id);
+      const totalTalhoesArea = talhoesNaProp.reduce((sum, t) => sum + t.volumArea, 0);
+      if (tamanhoTotal < totalTalhoesArea) {
+        setErro(`O tamanho total da propriedade (${tamanhoTotal} ha) não pode ser menor do que a soma das áreas de seus talhões existentes (${totalTalhoesArea} ha).`);
+        return;
+      }
+
       let locId = localizacoes.find(
         l => l.locLatitude === locLatitude && l.locLongitude === locLongitude
       )?.id;

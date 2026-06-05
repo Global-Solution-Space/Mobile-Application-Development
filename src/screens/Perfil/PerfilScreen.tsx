@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useScreenSync } from '../../hooks/useScreenSync';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../theme/colors';
@@ -12,8 +13,8 @@ import { RootStackParamList } from '../../types';
 export function PerfilScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
-  
   const { currentUser, talhoes, propriedades, telefones, logout } = useAppStore();
+  useScreenSync();
 
   const phone = telefones.find((t) => t.idProdutor === currentUser?.id);
   const phoneFormatted = phone ? `(${phone.ddd}) ${phone.numero}` : 'Não cadastrado';

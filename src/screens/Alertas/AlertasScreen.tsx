@@ -13,6 +13,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { AlertaAgricola } from '../../types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
+import { useScreenSync } from '../../hooks/useScreenSync';
 
 const getSeverityColor = (lvl: string) => {
   switch (lvl) {
@@ -55,6 +56,9 @@ interface AlertasScreenProps {
 
 export function AlertasScreen({ navigation }: AlertasScreenProps) {
   const { alertas, resolverEvento, reabrirEvento, deleteAlerta } = useAppStore();
+
+  useScreenSync();
+
   const [filter, setFilter] = useState<'Todos' | 'BAIXO' | 'MEDIO' | 'ALTO' | 'CRITICO'>('Todos');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 

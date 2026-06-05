@@ -14,6 +14,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { Propriedade } from '../../types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
+import { useScreenSync } from '../../hooks/useScreenSync';
 
 interface PropriedadesScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Propriedades'>;
@@ -21,6 +22,7 @@ interface PropriedadesScreenProps {
 
 export function PropriedadesScreen({ navigation }: PropriedadesScreenProps) {
   const { propriedades, talhoes } = useAppStore();
+  useScreenSync();
 
   const renderItem = ({ item }: { item: Propriedade }) => {
     const talhoesNaPropriedade = talhoes.filter(l => l.idPropriedade === item.id);

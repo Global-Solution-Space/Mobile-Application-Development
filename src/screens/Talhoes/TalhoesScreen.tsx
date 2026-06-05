@@ -3,10 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ScrollView, Alert
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
 import { EmptyState } from '../../components/EmptyState';
@@ -16,15 +13,15 @@ import { useAppStore } from '../../store/useAppStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList, Talhao } from '../../types';
 import { StatusBadge } from '../../components/StatusBadge';
+import { useScreenSync } from '../../hooks/useScreenSync';
 
 interface TalhoesScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
 }
 
 export function TalhoesScreen({ navigation }: TalhoesScreenProps) {
-  const {
-    talhoes, deleteTalhao, propriedades, tiposPlantacao, alertas
-  } = useAppStore();
+  const { talhoes, deleteTalhao, propriedades, tiposPlantacao, alertas } = useAppStore();
+  useScreenSync();
 
   const [showFilters, setShowFilters] = useState(false);
   const [filtroTipo, setFiltroTipo] = useState<number | 'Todos'>('Todos');

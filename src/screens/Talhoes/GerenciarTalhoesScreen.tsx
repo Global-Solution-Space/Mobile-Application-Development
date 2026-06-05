@@ -3,10 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, KeyboardAvoidingView, Platform
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { FormInput } from '../../components/FormInput';
 import { Colors } from '../../theme/colors';
@@ -24,11 +21,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'GerenciarTalhoes'>;
 
 export function GerenciarTalhoesScreen({ navigation, route }: Props) {
   const editId = route.params?.editId;
-
-  const { 
-    talhoes, addTalhao, updateTalhao, propriedades, tiposPlantacao, localizacoes, 
-    addLocalizacao
-  } = useAppStore();
+  const { talhoes, addTalhao, updateTalhao, propriedades, tiposPlantacao, localizacoes, addLocalizacao } = useAppStore();
 
   const [nome, setNome] = useState('');
   const [area, setArea] = useState('');
@@ -48,7 +41,7 @@ export function GerenciarTalhoesScreen({ navigation, route }: Props) {
         setArea(talhaoToEdit.volumArea.toString());
         setTipoId(talhaoToEdit.idTipoPlantacao);
         setPropId(talhaoToEdit.idPropriedade);
-        
+
         const loc = localizacoes.find(l => l.id === talhaoToEdit.idLocalizacao);
         if (loc) {
           setLat(loc.locLatitude.toString());
@@ -83,9 +76,20 @@ export function GerenciarTalhoesScreen({ navigation, route }: Props) {
       return;
     }
 
+    // Validação local de limites de área da propriedade
+    const prop = propriedades.find(p => p.id === idPropriedade);
+    if (prop) {
+      const otherTalhoes = talhoes.filter(t => t.idPropriedade === idPropriedade && t.id !== editId);
+      const currentSum = otherTalhoes.reduce((sum, t) => sum + t.volumArea, 0);
+      if (currentSum + volumArea > prop.tamanhoTotal) {
+        setErro(`A área total ocupada pelos talhões (${currentSum + volumArea} ha) excederia o tamanho total da propriedade "${prop.nome}" (${prop.tamanhoTotal} ha).`);
+        return;
+      }
+    }
+
     // Procura localização existente
     let finalLocId = localizacoes.find(l => l.locLatitude === locLatitude && l.locLongitude === locLongitude)?.id;
-    
+
     // Se não existir, cria
     if (!finalLocId) {
       const novaLoc = await addLocalizacao({ locLatitude, locLongitude });
@@ -114,7 +118,7 @@ export function GerenciarTalhoesScreen({ navigation, route }: Props) {
         idLocalizacao: finalLocId,
       });
     }
-    
+
     if (success) {
       navigation.goBack();
     }
@@ -125,7 +129,7 @@ export function GerenciarTalhoesScreen({ navigation, route }: Props) {
       <Header title={editId ? "Editar Talhão" : "Criar Talhão"} showBackButton />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>INFORMAÇÕES DO TALHÃO</Text>
 
@@ -213,7 +217,9 @@ export function GerenciarTalhoesScreen({ navigation, route }: Props) {
             </View>
           </View>
 
-          <ValidationError message={erro} onClear={() => setErro('')} />
+          <View style={{ paddingHorizontal: 20 }}>
+            <ValidationError message={erro} onClear={() => setErro('')} />
+          </View>
 
           <View style={styles.actionRow}>
             <View style={{ flex: 1 }}>
@@ -245,7 +251,7 @@ export function GerenciarTalhoesScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bgPrimary },
   scroll: { paddingBottom: 60 },
-  
+
   section: {
     paddingHorizontal: 20, paddingTop: 24, paddingBottom: 16,
     borderBottomWidth: 1, borderBottomColor: Colors.border,

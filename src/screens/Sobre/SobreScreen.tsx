@@ -3,11 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import React, { useState } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Linking,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Header } from '../../components/Header';
@@ -31,11 +27,8 @@ const ODS = [
 ];
 
 export function SobreScreen() {
-  const navigation = useNavigation();
   const [expandido, setExpandido] = useState<string | null>(null);
-
-  const toggle = (id: string) =>
-    setExpandido(expandido === id ? null : id);
+  const toggle = (id: string) => setExpandido(expandido === id ? null : id);
 
   return (
     <View style={styles.container}>
@@ -85,7 +78,7 @@ export function SobreScreen() {
           <View style={styles.themeCard}>
             <FontAwesome5 name="rocket" size={22} color={Colors.accent} style={{ marginBottom: 10 }} />
             <Text style={styles.themeTitle}>🌱 O Futuro é a Agricultura de Precisão</Text>
-            <Text style={styles.themeTitle}>
+            <Text style={styles.themeDesc}>
               Em um mundo em constante mudança, ferramentas inteligentes como o Terra Nova garantem o máximo de rendimento usando tecnologias modernas de monitoramento.
             </Text>
           </View>

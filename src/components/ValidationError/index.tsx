@@ -37,7 +37,7 @@ export function ValidationError({ message, onClear, timeout = 5000 }: Validation
         return () => clearTimeout(timer);
       }
     }
-  }, [message, onClear, timeout]);
+  }, [message]);
 
   if (!message) return null;
 
