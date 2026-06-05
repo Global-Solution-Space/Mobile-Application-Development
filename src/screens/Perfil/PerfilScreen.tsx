@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -15,14 +15,12 @@ export function PerfilScreen() {
   
   const { currentUser, talhoes, propriedades, telefones, logout } = useAppStore();
 
-  const phoneFormatted = useMemo(() => {
-    const phone = telefones.find((t) => t.idProdutor === currentUser?.id);
-    return phone ? `(${phone.ddd}) ${phone.numero}` : 'Não cadastrado';
-  }, [telefones, currentUser?.id]);
+  const phone = telefones.find((t) => t.idProdutor === currentUser?.id);
+  const phoneFormatted = phone ? `(${phone.ddd}) ${phone.numero}` : 'Não cadastrado';
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = () => {
     logout();
-  }, [logout]);
+  };
 
   const statusBarHeight = Platform.OS === 'android'
     ? (StatusBar.currentHeight || insets.top || 30)

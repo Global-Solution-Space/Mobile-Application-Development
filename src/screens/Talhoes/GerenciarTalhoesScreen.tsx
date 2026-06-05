@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
-// Terra Nova — Criar Talhão (e Entidades Vinculadas)
+// Terra Nova — Gerenciamento de Talhões (Criar e Editar)
 // ═══════════════════════════════════════════════════════════════
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, KeyboardAvoidingView, Platform, Alert
+  TouchableOpacity, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { FormInput } from '../../components/FormInput';
@@ -16,31 +16,47 @@ import { ModalTipoPlantacao } from '../../components/Modals/ModalTipoPlantacao';
 import { useAppStore } from '../../store/useAppStore';
 import { TalhaoSchema } from '../../schemas';
 import { ValidationError } from '../../components/ValidationError';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
+import { validarCoordenadasNoBrasil } from '../../utils/geolocation';
 
-interface CriarTalhaoScreenProps {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'CriarTalhao'>;
-}
+type Props = NativeStackScreenProps<RootStackParamList, 'GerenciarTalhoes'>;
 
-export function CriarTalhaoScreen({ navigation }: CriarTalhaoScreenProps) {
+export function GerenciarTalhoesScreen({ navigation, route }: Props) {
+  const editId = route.params?.editId;
+
   const { 
-    addTalhao, propriedades, tiposPlantacao, localizacoes, 
-    addLocalizacao, currentUser 
+    talhoes, addTalhao, updateTalhao, propriedades, tiposPlantacao, localizacoes, 
+    addLocalizacao
   } = useAppStore();
 
   const [nome, setNome] = useState('');
   const [area, setArea] = useState('');
-  
   const [tipoId, setTipoId] = useState<number | null>(null);
   const [propId, setPropId] = useState<number | null>(null);
-
   const [lat, setLat] = useState('');
   const [lon, setLon] = useState('');
-
   const [erro, setErro] = useState('');
 
   const [modalTipo, setModalTipo] = useState(false);
+
+  useEffect(() => {
+    if (editId) {
+      const talhaoToEdit = talhoes.find(t => t.id === editId);
+      if (talhaoToEdit) {
+        setNome(talhaoToEdit.nomeTalhao);
+        setArea(talhaoToEdit.volumArea.toString());
+        setTipoId(talhaoToEdit.idTipoPlantacao);
+        setPropId(talhaoToEdit.idPropriedade);
+        
+        const loc = localizacoes.find(l => l.id === talhaoToEdit.idLocalizacao);
+        if (loc) {
+          setLat(loc.locLatitude.toString());
+          setLon(loc.locLongitude.toString());
+        }
+      }
+    }
+  }, [editId, talhoes, localizacoes]);
 
   const handleSaveTalhao = async () => {
     setErro('');
@@ -61,41 +77,52 @@ export function CriarTalhaoScreen({ navigation }: CriarTalhaoScreenProps) {
 
     const { nomeTalhao, volumArea, locLatitude, locLongitude, idTipoPlantacao, idPropriedade } = validation.data;
 
+    const geoValidation = await validarCoordenadasNoBrasil(locLatitude, locLongitude);
+    if (!geoValidation.isValid) {
+      setErro(geoValidation.message!);
+      return;
+    }
+
     // Procura localização existente
-    let locId = localizacoes.find(l => l.locLatitude === locLatitude && l.locLongitude === locLongitude)?.id;
+    let finalLocId = localizacoes.find(l => l.locLatitude === locLatitude && l.locLongitude === locLongitude)?.id;
     
     // Se não existir, cria
-    if (!locId) {
+    if (!finalLocId) {
       const novaLoc = await addLocalizacao({ locLatitude, locLongitude });
       if (!novaLoc) {
         setErro('Erro ao cadastrar localização do Talhão.');
         return;
       }
-      locId = novaLoc.id;
+      finalLocId = novaLoc.id;
     }
 
-    await addTalhao({
-      nomeTalhao,
-      volumArea,
-      idTipoPlantacao,
-      idPropriedade,
-      idLocalizacao: locId,
-    });
+    let success = false;
+    if (editId) {
+      success = await updateTalhao(editId, {
+        nomeTalhao,
+        volumArea,
+        idTipoPlantacao,
+        idPropriedade,
+        idLocalizacao: finalLocId,
+      });
+    } else {
+      success = await addTalhao({
+        nomeTalhao,
+        volumArea,
+        idTipoPlantacao,
+        idPropriedade,
+        idLocalizacao: finalLocId,
+      });
+    }
     
-    // Reseta form
-    setNome('');
-    setArea('');
-    setTipoId(null);
-    setPropId(null);
-    setLat('');
-    setLon('');
-    
-    navigation.goBack();
+    if (success) {
+      navigation.goBack();
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Header title="Criar Talhão" showBackButton />
+      <Header title={editId ? "Editar Talhão" : "Criar Talhão"} showBackButton />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           
@@ -154,7 +181,7 @@ export function CriarTalhaoScreen({ navigation }: CriarTalhaoScreenProps) {
                 />
               ))}
               {propriedades.length === 0 && (
-                <Text style={styles.emptyText}>Nenhuma propriedade encontrada. Adicione uma nova.</Text>
+                <Text style={styles.emptyText}>Nenhuma propriedade encontrada. Você precisa cadastrar uma propriedade primeiro.</Text>
               )}
             </ScrollView>
           </View>
@@ -191,15 +218,15 @@ export function CriarTalhaoScreen({ navigation }: CriarTalhaoScreenProps) {
           <View style={styles.actionRow}>
             <View style={{ flex: 1 }}>
               <PrimaryButton
-                title="Voltar"
-                icon="arrow-left"
+                title="Cancelar"
+                icon="times"
                 variant="outline"
                 onPress={() => navigation.goBack()}
               />
             </View>
             <View style={{ flex: 2 }}>
               <PrimaryButton
-                title="Salvar Talhão"
+                title={editId ? "Salvar Alterações" : "Salvar Talhão"}
                 icon="save"
                 onPress={handleSaveTalhao}
               />

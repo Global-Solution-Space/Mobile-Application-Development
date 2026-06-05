@@ -2,7 +2,7 @@
 // Terra Nova — Tela de Cadastro de Usuário
 // ═══════════════════════════════════════════════════════════════
 
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ScrollView
@@ -33,7 +33,7 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
 
   const register = useAppStore(s => s.register);
 
-  const handleRegister = useCallback(async () => {
+  const handleRegister = async () => {
     setErro('');
     const validation = RegisterSchema.safeParse({ nome, email, senha, confirmarSenha, ddd, telefone });
     
@@ -51,7 +51,7 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
         setErro('Este e-mail já está cadastrado no sistema.');
       }
     }
-  }, [nome, email, senha, confirmarSenha, ddd, telefone, register]);
+  };
 
   return (
     <KeyboardAvoidingView

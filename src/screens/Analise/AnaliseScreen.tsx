@@ -58,15 +58,8 @@ export function AnaliseScreen({ navigation }: AnaliseScreenProps) {
     );
   };
 
-  const selectedTalhao = useMemo(() => 
-    talhoes.find(t => t.id === selectedTalhaoId),
-    [talhoes, selectedTalhaoId]
-  );
-  
-  const selectedLoc = useMemo(() => 
-    selectedTalhao ? localizacoes.find(l => l.id === selectedTalhao.idLocalizacao) : null,
-    [selectedTalhao, localizacoes]
-  );
+  const selectedTalhao = talhoes.find(t => t.id === selectedTalhaoId);
+  const selectedLoc = selectedTalhao ? localizacoes.find(l => l.id === selectedTalhao.idLocalizacao) : null;
 
   return (
     <View style={styles.container}>

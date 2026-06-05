@@ -33,10 +33,10 @@ export function AnaliseDetalhesScreen({ route }: AnaliseDetalhesScreenProps) {
   
   // Memoiza os cálculos pesados matemáticos extraindo dados da store viva (Zustand)
   const { dataEntries, tableEntries, chartEntries, chartMax } = useMemo(() => {
-    // 1. Extração rápida na memória (sem serialização pesada do React Navigation)
+    // Extração rápida na memória (sem serialização pesada do React Navigation)
     const filtered = dadosTemporais.filter(d => d.idReqApi === id);
     
-    // 2. Ordenação cronológica garantida
+    // Ordenação cronológica garantida
     const entries = filtered
       .map(d => ({ date: d.dataLeitura, val: d.valor }))
       .sort((a, b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    bottom: 30, // space for bar labels
+    bottom: 30,
     justifyContent: 'space-between',
   },
   gridLineRow: {
@@ -454,10 +454,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(17, 66, 43, 0.3)',
+    borderBottomColor: Colors.border,
   },
   tableRowAlt: {
-    backgroundColor: 'rgba(255, 255, 255, 0.01)',
+    backgroundColor: Colors.white05,
   },
   tableCellDateContainer: {
     flexDirection: 'row',

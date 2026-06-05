@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { useAppStore } from '../../store/useAppStore';
 import { PropriedadeSchema } from '../../schemas';
@@ -50,24 +50,26 @@ export function ModalPropriedade({ visible, onClose }: ModalPropriedadeProps) {
       locId = novaLoc.id;
     }
 
-    await addPropriedade({
+    const success = await addPropriedade({
       nome,
       tamanhoTotal,
       idProdutor: currentUser.id,
       idLocalizacao: locId,
     });
 
-    setNovaPropNome('');
-    setNovaPropTamanho('');
-    setNovaPropLat('');
-    setNovaPropLon('');
-    onClose();
+    if (success) {
+      setNovaPropNome('');
+      setNovaPropTamanho('');
+      setNovaPropLat('');
+      setNovaPropLon('');
+      onClose();
+    }
   };
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.modalOverlay}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.keyboardAvoiding}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Nova Propriedade</Text>
             
@@ -112,15 +114,15 @@ export function ModalPropriedade({ visible, onClose }: ModalPropriedadeProps) {
               </TouchableOpacity>
             </View>
           </View>
-        </KeyboardAvoidingView>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  keyboardAvoiding: { width: '100%', alignItems: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: Colors.overlay },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { backgroundColor: Colors.bgSecondary, width: '100%', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: Colors.border },
   modalTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 20, textAlign: 'center' },
   label: { fontSize: 12, color: Colors.textSecondary, fontWeight: '600', marginBottom: 6 },

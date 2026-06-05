@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { 
   ProdutorResponseSchema, TelefoneResponseSchema, LocalizacaoResponseSchema,
   PropriedadeResponseSchema, TipoPlantacaoResponseSchema, TalhaoResponseSchema,
-  AlertaAgricolaResponseSchema, DadoTemporalResponseSchema
+  AlertaAgricolaResponseSchema, DadoTemporalResponseSchema, ReqApiResponseSchema
 } from '../schemas';
 
 const api = axios.create({
@@ -166,8 +166,8 @@ export const apiService = {
     return res.data;
   },
   getReqApisByTalhao: async (idTalhao: number) => {
-    const res = await api.get<ReqApi[]>(`/req-api/talhao/${idTalhao}`);
-    return res.data;
+    const res = await api.get(`/req-api/talhao/${idTalhao}`);
+    return extractAndValidate<ReqApi>(res.data, ReqApiResponseSchema);
   },
   deleteReqApi: async (id: number) => {
     await api.delete(`/req-api/${id}`);
@@ -198,6 +198,10 @@ export const apiService = {
   },
   resolveAlerta: async (id: number) => {
     const res = await api.patch<AlertaAgricola>(`/alertas/${id}/resolver`);
+    return res.data;
+  },
+  reabrirAlerta: async (id: number) => {
+    const res = await api.patch<AlertaAgricola>(`/alertas/${id}/reabrir`);
     return res.data;
   },
   deleteAlerta: async (id: number) => {

@@ -2,7 +2,7 @@
 // Terra Nova — Logs de Atividades do Sistema
 // ═══════════════════════════════════════════════════════════════
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
@@ -39,7 +39,7 @@ interface LogsScreenProps {
 export function LogsScreen({ navigation }: LogsScreenProps) {
   const { logs } = useAppStore();
 
-  const renderItem = ({ item, index }: { item: LogAtividade; index: number }) => {
+  const renderItem = useCallback(({ item, index }: { item: LogAtividade; index: number }) => {
     const cfg = tipoConfig[item.tipo] || { icon: 'info-circle', color: Colors.textSecondary, label: 'Info' };
     return (
       <View style={styles.logItem}>
@@ -61,7 +61,7 @@ export function LogsScreen({ navigation }: LogsScreenProps) {
         </View>
       </View>
     );
-  };
+  }, [logs.length]);
 
   return (
     <View style={styles.container}>
@@ -71,6 +71,9 @@ export function LogsScreen({ navigation }: LogsScreenProps) {
         keyExtractor={item => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
+        initialNumToRender={12}
+        windowSize={5}
+        removeClippedSubviews={true}
         ListEmptyComponent={
           <EmptyState icon="stream" title="Sem atividades" />
         }

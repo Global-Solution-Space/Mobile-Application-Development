@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, KeyboardAvoidingView, Platform
@@ -31,7 +31,7 @@ export function EditarPerfilScreen() {
   const emailValido = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   const senhasIguais = novaSenha.length > 0 && novaSenha === confirmarSenha;
 
-  const handleSave = useCallback(() => {
+  const handleSave = () => {
     setErro('');
 
     if (!nome.trim()) {
@@ -63,7 +63,7 @@ export function EditarPerfilScreen() {
     updateProfile(updates, telefoneUpdates);
 
     navigation.goBack();
-  }, [nome, novoEmail, novaSenha, confirmarSenha, ddd, telefone, senhasIguais, updateProfile, navigation]);
+  };
 
   return (
     <View style={styles.container}>
@@ -133,7 +133,7 @@ export function EditarPerfilScreen() {
             <Text style={{ fontSize: 12, color: Colors.textSecondary, fontWeight: '600', marginBottom: 6, marginLeft: 2 }}>E-mail atual</Text>
             <View style={styles.inputLocked}>
               <Text style={styles.inputLockedText}>{currentUser?.email}</Text>
-              <FontAwesome5 name="lock" size={13} color="#ffffff22" />
+              <FontAwesome5 name="lock" size={13} color={Colors.textMuted} />
             </View>
             <View style={styles.verifiedBadge}>
               <FontAwesome5 name="check-circle" size={11} color={Colors.accent} />
@@ -219,11 +219,11 @@ const styles = StyleSheet.create({
   // avatar
   avatarSection: {
     alignItems: 'center', paddingVertical: 24,
-    borderBottomWidth: 0.5, borderBottomColor: '#ffffff10', gap: 8,
+    borderBottomWidth: 0.5, borderBottomColor: Colors.border, gap: 8,
   },
   avatarRing: {
     width: 76, height: 76, borderRadius: 38,
-    borderWidth: 1.5, borderColor: '#ffffff22',
+    borderWidth: 1.5, borderColor: Colors.borderLight,
     alignItems: 'center', justifyContent: 'center',
   },
   avatarCircle: {
@@ -237,11 +237,11 @@ const styles = StyleSheet.create({
   // seções
   section: {
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
-    borderBottomWidth: 0.5, borderBottomColor: '#ffffff10',
+    borderBottomWidth: 0.5, borderBottomColor: Colors.border,
   },
   sectionTitle: {
     fontSize: 10, fontWeight: '700',
-    color: '#ffffff44', letterSpacing: 1.5, marginBottom: 16,
+    color: Colors.textMuted, letterSpacing: 1.5, marginBottom: 16,
   },
 
   // inputs especiais (locked)
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 12,
     marginBottom: 14,
   },
-  inputLockedText: { color: '#ffffff44', fontSize: 14 },
+  inputLockedText: { color: Colors.textMuted, fontSize: 14 },
 
   // badge verificado
   verifiedBadge: {

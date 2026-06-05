@@ -1,42 +1,83 @@
 // ═══════════════════════════════════════════════════════════════
 // Terra Nova — Componente FormInput
-// Input estilizado com ícone lateral (padrão do Design System)
+// Input estilizado com estado de Foco, Erro e Suporte a Ref
 // ═══════════════════════════════════════════════════════════════
 
-import React from 'react';
+import React, { useState, forwardRef, ComponentProps } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, TextInputProps, Platform } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 
 interface FormInputProps extends TextInputProps {
-  iconName?: string;
+  iconName?: ComponentProps<typeof FontAwesome5>['name'];
   label?: string;
-  rightIcon?: string;
+  rightIcon?: ComponentProps<typeof FontAwesome5>['name'];
   onRightIconPress?: () => void;
+  error?: string;
 }
 
-export function FormInput({ iconName, label, rightIcon, onRightIconPress, style, ...rest }: FormInputProps) {
-  return (
-    <View style={styles.wrapper}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
-      <View style={[styles.container, rest.multiline && { alignItems: 'flex-start', paddingVertical: 14, minHeight: 100 }]}>
-        {iconName ? (
-          <FontAwesome5 name={iconName} size={16} color={Colors.textMuted} style={[styles.icon, rest.multiline && { marginTop: Platform.OS === 'ios' ? 2 : 4 }]} />
-        ) : null}
-        <TextInput
-          style={[styles.input, style, rest.multiline && { textAlignVertical: 'top', paddingTop: Platform.OS === 'android' ? 0 : undefined }]}
-          placeholderTextColor={Colors.textMuted}
-          {...rest}
-        />
-        {rightIcon && onRightIconPress ? (
-          <TouchableOpacity onPress={onRightIconPress} style={styles.rightBtn}>
-            <FontAwesome5 name={rightIcon} size={16} color={Colors.textMuted} />
-          </TouchableOpacity>
+export const FormInput = forwardRef<TextInput, FormInputProps>(
+  ({ iconName, label, rightIcon, onRightIconPress, style, error, onFocus, onBlur, ...rest }, ref) => {
+    const [isFocused, setIsFocused] = useState(false);
+
+    // Determina a cor de destaque (Borda/Icone)
+    const highlightColor = error ? Colors.danger : (isFocused ? Colors.accent : Colors.border);
+    const iconColor = error ? Colors.danger : (isFocused ? Colors.accent : Colors.textMuted);
+
+    return (
+      <View style={styles.wrapper}>
+        {label ? <Text style={styles.label}>{label}</Text> : null}
+        
+        <View 
+          style={[
+            styles.container, 
+            rest.multiline && { alignItems: 'flex-start', paddingVertical: 14, minHeight: 100 },
+            { borderColor: highlightColor, backgroundColor: isFocused ? Colors.bgTertiary : Colors.bgInput }
+          ]}
+        >
+          {iconName ? (
+            <FontAwesome5 
+              name={iconName} 
+              size={16} 
+              color={iconColor} 
+              style={[styles.icon, rest.multiline && { marginTop: Platform.OS === 'ios' ? 2 : 4 }]} 
+            />
+          ) : null}
+          
+          <TextInput
+            ref={ref}
+            style={[styles.input, style, rest.multiline && { textAlignVertical: 'top', paddingTop: Platform.OS === 'android' ? 0 : undefined }]}
+            placeholderTextColor={Colors.textMuted}
+            onFocus={(e) => {
+              setIsFocused(true);
+              onFocus?.(e);
+            }}
+            onBlur={(e) => {
+              setIsFocused(false);
+              onBlur?.(e);
+            }}
+            {...rest}
+          />
+          
+          {rightIcon && onRightIconPress ? (
+            <TouchableOpacity onPress={onRightIconPress} style={styles.rightBtn}>
+              <FontAwesome5 name={rightIcon} size={16} color={Colors.textMuted} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {error ? (
+          <View style={styles.errorContainer}>
+            <FontAwesome5 name="exclamation-circle" size={10} color={Colors.danger} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
         ) : null}
       </View>
-    </View>
-  );
-}
+    );
+  }
+);
+
+FormInput.displayName = 'FormInput';
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -52,10 +93,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.bgInput,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
     paddingHorizontal: 14,
     minHeight: 52,
   },
@@ -70,4 +109,16 @@ const styles = StyleSheet.create({
   rightBtn: {
     padding: 8,
   },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+    marginLeft: 4,
+  },
+  errorText: {
+    color: Colors.danger,
+    fontSize: 11,
+    fontWeight: '500',
+  }
 });

@@ -26,7 +26,7 @@ export interface TelemetryConfig {
   badgeIcon: any;
   badgeColor: string;
   thValueText: string;
-  isDynamicScale: boolean; // Define se a escala Y do gráfico foca dinamicamente nos dados ou crava limites.
+  isDynamicScale: boolean;
 
   // Funções de formatação e visualização
   formatValue: (val: number) => string;

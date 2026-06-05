@@ -11,9 +11,10 @@ export const Colors = {
   bgCard:      '#0F3326',   // Card hover/selecionado
   bgInput:     '#0A1F16',   // Campos de input
 
-  // ── Bordas ──────────────────────────────────────
+  // ── Bordas e Sombras ─────────────────────────────
   border:      '#11422B',   // Borda padrão
   borderLight: '#1A5C3A',   // Borda hover/focus
+  shadow:      '#000000',   // Sombra de elevação
 
   // ── Texto ──────────────────────────────────────
   textPrimary:   '#F8FAFC', // Texto principal (quase branco)
@@ -25,7 +26,7 @@ export const Colors = {
   accent:        '#10B981', // Verde esmeralda principal
   accentLight:   '#34D399', // Verde claro para hovers
   accentDark:    '#059669', // Verde escuro para pressed
-  accentGlow:    'rgba(16, 185, 129, 0.15)', // Glow effect
+  accentGlow:    '#10B98126', // Glow effect (15% opacity)
 
   // ── Status ──────────────────────────────────────
   success:   '#10B981',
@@ -35,18 +36,18 @@ export const Colors = {
   critical:  '#DC2626',
 
   // ── Status Backgrounds ─────────────────────────
-  successBg: 'rgba(16, 185, 129, 0.12)',
-  warningBg: 'rgba(245, 158, 11, 0.12)',
-  dangerBg:  'rgba(239, 68, 68, 0.12)',
-  infoBg:    'rgba(59, 130, 246, 0.12)',
-  criticalBg:'rgba(220, 38, 38, 0.15)',
+  successBg: '#10B9811F', // 12% opacity
+  warningBg: '#F59E0B1F', // 12% opacity
+  dangerBg:  '#EF44441F', // 12% opacity
+  infoBg:    '#3B82F61F', // 12% opacity
+  criticalBg:'#DC262626', // 15% opacity
 
   // ── Overlay ─────────────────────────────────────
-  overlay: 'rgba(4, 16, 11, 0.85)',
+  overlay: '#04100BD9', // 85% opacity
 
   // ── Transparências ──────────────────────────────
-  white10: 'rgba(255, 255, 255, 0.10)',
-  white05: 'rgba(255, 255, 255, 0.05)',
+  white10: '#FFFFFF1A', // 10% opacity
+  white05: '#FFFFFF0D', // 05% opacity
 } as const;
 
 export type ColorKey = keyof typeof Colors;

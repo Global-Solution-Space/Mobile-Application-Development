@@ -2,7 +2,7 @@
 // Terra Nova — Listagem de Talhões
 // ═══════════════════════════════════════════════════════════════
 
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ScrollView, Alert
@@ -11,99 +11,33 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
 import { EmptyState } from '../../components/EmptyState';
 import { SelectChip } from '../../components/SelectChip';
-import { FormInput } from '../../components/FormInput';
-import { PrimaryButton } from '../../components/PrimaryButton';
 import { Colors } from '../../theme/colors';
 import { useAppStore } from '../../store/useAppStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList, Talhao } from '../../types';
 import { StatusBadge } from '../../components/StatusBadge';
-import { TalhaoSchema } from '../../schemas';
-import { ValidationError } from '../../components/ValidationError';
 
 interface TalhoesScreenProps {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Tabs'>;
+  navigation: NativeStackNavigationProp<RootStackParamList>;
 }
 
 export function TalhoesScreen({ navigation }: TalhoesScreenProps) {
   const {
-    talhoes, deleteTalhao, updateTalhao, propriedades, tiposPlantacao, localizacoes, addLocalizacao, alertas
+    talhoes, deleteTalhao, propriedades, tiposPlantacao, alertas
   } = useAppStore();
 
-  const [editTalhao, setEditTalhao] = useState<Talhao | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-
-  const [editNome, setEditNome] = useState('');
-  const [editArea, setEditArea] = useState('');
-  const [editTipoId, setEditTipoId] = useState<number | null>(null);
-  const [editPropId, setEditPropId] = useState<number | null>(null);
-  const [editLat, setEditLat] = useState('');
-  const [editLon, setEditLon] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<number | 'Todos'>('Todos');
   const [filtroProp, setFiltroProp] = useState<number | 'Todas'>('Todas');
-  const [editErro, setEditErro] = useState('');
 
-  const filtered = talhoes.filter(t => {
+  const filtered = useMemo(() => talhoes.filter(t => {
     if (filtroTipo !== 'Todos' && t.idTipoPlantacao !== filtroTipo) return false;
     if (filtroProp !== 'Todas' && t.idPropriedade !== filtroProp) return false;
     return true;
-  });
+  }), [talhoes, filtroTipo, filtroProp]);
 
   const openEdit = (talhao: Talhao) => {
-    setEditTalhao(talhao);
-    setEditNome(talhao.nomeTalhao);
-    setEditArea(talhao.volumArea.toString());
-    setEditTipoId(talhao.idTipoPlantacao);
-    setEditPropId(talhao.idPropriedade);
-    const loc = localizacoes.find(l => l.id === talhao.idLocalizacao);
-    if (loc) {
-      setEditLat(loc.locLatitude.toString());
-      setEditLon(loc.locLongitude.toString());
-    } else {
-      setEditLat('');
-      setEditLon('');
-    }
-  };
-
-  const saveEdit = async () => {
-    if (!editTalhao) return;
-    setEditErro('');
-
-    const validation = TalhaoSchema.safeParse({
-      nomeTalhao: editNome,
-      volumArea: editArea,
-      locLatitude: editLat,
-      locLongitude: editLon,
-      idTipoPlantacao: editTipoId,
-      idPropriedade: editPropId
-    });
-
-    if (!validation.success) {
-      setEditErro(validation.error.issues[0].message);
-      return;
-    }
-
-    const { nomeTalhao, volumArea, locLatitude, locLongitude, idTipoPlantacao, idPropriedade } = validation.data;
-
-    let finalLocId = localizacoes.find(l => l.locLatitude === locLatitude && l.locLongitude === locLongitude)?.id;
-
-    if (!finalLocId) {
-      const newLoc = await addLocalizacao({ locLatitude, locLongitude });
-      if (!newLoc) {
-        setEditErro('Não foi possível cadastrar a nova localização.');
-        return;
-      }
-      finalLocId = newLoc.id;
-    }
-
-    await updateTalhao(editTalhao.id, {
-      nomeTalhao,
-      volumArea,
-      idTipoPlantacao,
-      idPropriedade,
-      idLocalizacao: finalLocId,
-    });
-    setEditTalhao(null);
+    navigation.navigate('GerenciarTalhoes', { editId: talhao.id });
   };
 
   const confirmDelete = (talhao: Talhao) => {
@@ -117,98 +51,7 @@ export function TalhoesScreen({ navigation }: TalhoesScreenProps) {
     );
   };
 
-  if (editTalhao) {
-    return (
-      <View style={styles.container}>
-        <Header title={`Editar — ${editTalhao.nomeTalhao}`} />
-        <ScrollView style={styles.editContainer}>
-          <FormInput
-            label="Nome do Talhão *"
-            iconName="tag"
-            value={editNome}
-            onChangeText={setEditNome}
-          />
-
-          <FormInput
-            label="Volume / Área (ha) *"
-            iconName="ruler-combined"
-            value={editArea}
-            onChangeText={setEditArea}
-            keyboardType="numeric"
-          />
-
-          <Text style={styles.formLabel}>Tipo de Plantação *</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingBottom: 4, marginVertical: 6 }}>
-            {tiposPlantacao.map(t => (
-              <SelectChip
-                key={t.id}
-                label={t.tipoPlant}
-                isActive={editTipoId === t.id}
-                onPress={() => setEditTipoId(t.id)}
-              />
-            ))}
-          </ScrollView>
-
-          <Text style={styles.formLabel}>Propriedade *</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingBottom: 4, marginVertical: 6 }}>
-            {propriedades.map(p => (
-              <SelectChip
-                key={p.id}
-                label={p.nome}
-                isActive={editPropId === p.id}
-                onPress={() => setEditPropId(p.id)}
-              />
-            ))}
-          </ScrollView>
-
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
-            <View style={{ flex: 1 }}>
-              <FormInput
-                label="Latitude *"
-                iconName="map-marker-alt"
-                value={editLat}
-                onChangeText={setEditLat}
-                placeholder="Ex: -23.5505"
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <FormInput
-                label="Longitude *"
-                iconName="map-marker-alt"
-                value={editLon}
-                onChangeText={setEditLon}
-                placeholder="Ex: -46.6333"
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
-
-          <ValidationError message={editErro} onClear={() => setEditErro('')} />
-
-          <View style={styles.actionRow}>
-            <View style={{ flex: 1 }}>
-              <PrimaryButton
-                title="Cancelar"
-                icon="arrow-left"
-                variant="outline"
-                onPress={() => setEditTalhao(null)}
-              />
-            </View>
-            <View style={{ flex: 2 }}>
-              <PrimaryButton
-                title="Salvar Alterações"
-                icon="save"
-                onPress={saveEdit}
-              />
-            </View>
-          </View>
-        </ScrollView>
-      </View>
-    );
-  }
-
-  const renderItem = ({ item }: { item: Talhao }) => {
+  const renderItem = useCallback(({ item }: { item: Talhao }) => {
     const prop = propriedades.find(p => p.id === item.idPropriedade);
     const tipo = tiposPlantacao.find(t => t.id === item.idTipoPlantacao);
 
@@ -257,17 +100,17 @@ export function TalhoesScreen({ navigation }: TalhoesScreenProps) {
         <View style={styles.talhaoActions}>
           <TouchableOpacity style={styles.editBtn} onPress={() => openEdit(item)} activeOpacity={0.7}>
             <FontAwesome5 name="edit" size={13} color={Colors.info} />
-            <Text style={[styles.irrigaBtnText, { color: Colors.info, marginLeft: 6 }]}>Editar</Text>
+            <Text style={[styles.actionBtnText, { color: Colors.info }]}>Editar</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.deleteBtn} onPress={() => confirmDelete(item)} activeOpacity={0.7}>
             <FontAwesome5 name="trash" size={13} color={Colors.danger} />
-            <Text style={[styles.irrigaBtnText, { color: Colors.danger, marginLeft: 6 }]}>Excluir</Text>
+            <Text style={[styles.actionBtnText, { color: Colors.danger }]}>Excluir</Text>
           </TouchableOpacity>
         </View>
       </View>
     );
-  };
+  }, [propriedades, tiposPlantacao, alertas]);
 
   return (
     <View style={styles.container}>
@@ -301,7 +144,7 @@ export function TalhoesScreen({ navigation }: TalhoesScreenProps) {
         </View>
       )}
 
-      <TouchableOpacity style={styles.addTalhaoBtnFull} onPress={() => navigation.navigate('CriarTalhao')} activeOpacity={0.85}>
+      <TouchableOpacity style={styles.addTalhaoBtnFull} onPress={() => navigation.navigate('GerenciarTalhoes')} activeOpacity={0.85}>
         <FontAwesome5 name="plus" size={14} color={Colors.bgPrimary} />
         <Text style={styles.addTalhaoBtnFullText}>Cadastrar Novo Talhão</Text>
       </TouchableOpacity>
@@ -315,6 +158,9 @@ export function TalhoesScreen({ navigation }: TalhoesScreenProps) {
         keyExtractor={item => item.id.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
+        initialNumToRender={8}
+        windowSize={5}
+        removeClippedSubviews={true}
         ListEmptyComponent={<EmptyState icon="seedling" title="Nenhum talhão encontrado" subtitle='Toque em "Cadastrar Novo Talhão" para começar!' />}
       />
     </View>
@@ -346,11 +192,7 @@ const styles = StyleSheet.create({
   detailText: { fontSize: 12, color: Colors.textSecondary },
 
   talhaoActions: { flexDirection: 'row', gap: 10, borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 12 },
-  irrigaBtnText: { fontSize: 13, color: Colors.info, fontWeight: '700' },
+  actionBtnText: { fontSize: 13, fontWeight: '700', marginLeft: 6 },
   editBtn: { flex: 1, flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, backgroundColor: Colors.infoBg, alignItems: 'center', justifyContent: 'center' },
   deleteBtn: { flex: 1, flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, backgroundColor: Colors.dangerBg, alignItems: 'center', justifyContent: 'center' },
-
-  editContainer: { padding: 20 },
-  formLabel: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600', marginBottom: 8, marginTop: 14 },
-  actionRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
 });

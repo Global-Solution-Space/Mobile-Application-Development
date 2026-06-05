@@ -12,7 +12,6 @@ interface SelectChipProps {
   emoji?: string;
   isActive: boolean;
   onPress: () => void;
-  /** Cor customizada quando ativo (por padrão usa Colors.accent) */
   activeColor?: string;
 }
 
@@ -23,13 +22,19 @@ export function SelectChip({ label, emoji, isActive, onPress, activeColor }: Sel
     <TouchableOpacity
       style={[
         styles.chip,
-        isActive && { backgroundColor: color + '22', borderColor: color },
+        isActive && { backgroundColor: `${color}22`, borderColor: color },
       ]}
       onPress={onPress}
       activeOpacity={0.7}
+      hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
+      accessibilityRole="button"
+      accessibilityState={{ selected: isActive }}
     >
       {emoji ? <Text style={styles.emoji}>{emoji}</Text> : null}
-      <Text style={[styles.text, isActive && { color, fontWeight: '700' }]}>
+      <Text 
+        style={[styles.text, isActive && { color, fontWeight: '700' }]}
+        numberOfLines={1}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -48,12 +53,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     marginRight: 8,
+    flexShrink: 1,
   },
   emoji: {
-    fontSize: 16,
+    fontSize: 14, 
   },
   text: {
-    fontSize: 12,
+    fontSize: 13,
     color: Colors.textSecondary,
+    fontWeight: '500',
+    flexShrink: 1,
   },
 });

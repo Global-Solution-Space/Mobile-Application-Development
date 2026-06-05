@@ -178,8 +178,9 @@ const styles = StyleSheet.create({
   heroSection: {
     alignItems: 'center',
     paddingVertical: 32,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#ffffff10',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    paddingBottom: 24,
     gap: 8,
   },
   logoCircle: {
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
   versaoBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: Colors.bgSecondary,
-    borderWidth: 0.5, borderColor: '#ffffff14',
+    borderWidth: 0.5, borderColor: Colors.border,
     borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
     marginTop: 4,
   },
@@ -202,20 +203,19 @@ const styles = StyleSheet.create({
 
   // seções
   section: {
-    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8,
-    borderBottomWidth: 0.5, borderBottomColor: '#ffffff10',
+    paddingHorizontal: 20, paddingTop: 24, paddingBottom: 16,
+    borderBottomWidth: 0.5, borderBottomColor: Colors.border,
   },
   sectionTitle: {
-    fontSize: 10, fontWeight: '700',
-    color: '#ffffff44', letterSpacing: 1.5,
-    marginBottom: 14,
+    fontSize: 11, fontWeight: '700',
+    color: Colors.textMuted, letterSpacing: 1.5,
+    marginBottom: 16,
   },
 
   // descrição
   descCard: {
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: 12, padding: 16,
-    borderWidth: 0.5, borderColor: '#ffffff12',
+    backgroundColor: Colors.bgTertiary, borderRadius: 10, padding: 12, marginBottom: 12,
+    borderWidth: 0.5, borderColor: Colors.border,
     gap: 10,
   },
   descText: { color: Colors.textSecondary, fontSize: 13, lineHeight: 20 },
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   themeCard: {
     backgroundColor: Colors.accentGlow,
     borderRadius: 12, padding: 18,
-    borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)',
+    borderWidth: 1, borderColor: Colors.accent,
     alignItems: 'center',
   },
   themeTitle: { color: Colors.textPrimary, fontSize: 15, fontWeight: '700', marginBottom: 8 },
@@ -246,12 +246,12 @@ const styles = StyleSheet.create({
   techRow: {
     flexDirection: 'row', alignItems: 'center',
     gap: 12, paddingVertical: 10,
-    borderBottomWidth: 0.5, borderBottomColor: '#ffffff08',
+    borderBottomWidth: 0.5, borderBottomColor: Colors.border,
   },
   techIconBox: {
     width: 36, height: 36, borderRadius: 10,
     backgroundColor: Colors.bgSecondary,
-    borderWidth: 0.5, borderColor: '#ffffff14',
+    borderWidth: 0.5, borderColor: Colors.border,
     alignItems: 'center', justifyContent: 'center',
   },
   techLabel: { color: Colors.textPrimary, fontSize: 13, fontWeight: '600' },
@@ -260,8 +260,8 @@ const styles = StyleSheet.create({
   // disciplina accordion
   discCard: {
     backgroundColor: Colors.bgSecondary,
-    borderRadius: 12,
-    borderWidth: 0.5, borderColor: '#ffffff14',
+    borderRadius: 8,
+    borderWidth: 0.5, borderColor: Colors.border,
     overflow: 'hidden',
   },
   discHeader: {

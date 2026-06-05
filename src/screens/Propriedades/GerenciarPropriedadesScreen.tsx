@@ -18,6 +18,7 @@ import { ValidationError } from '../../components/ValidationError';
 import { useAppStore } from '../../store/useAppStore';
 import { PropriedadeSchema } from '../../schemas';
 import { Propriedade } from '../../types';
+import { validarCoordenadasNoBrasil } from '../../utils/geolocation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
 
@@ -88,6 +89,12 @@ export function GerenciarPropriedadesScreen({ navigation }: GerenciarPropriedade
 
     const { nome: propNome, tamanhoTotal, locLatitude, locLongitude } = validation.data;
 
+    const geoValidation = await validarCoordenadasNoBrasil(locLatitude, locLongitude);
+    if (!geoValidation.isValid) {
+      setErro(geoValidation.message!);
+      return;
+    }
+
     if (editProp) {
       let locId = localizacoes.find(
         l => l.locLatitude === locLatitude && l.locLongitude === locLongitude
@@ -102,13 +109,15 @@ export function GerenciarPropriedadesScreen({ navigation }: GerenciarPropriedade
         locId = novaLoc.id;
       }
 
-      await updatePropriedade(editProp.id, {
+      const success = await updatePropriedade(editProp.id, {
         nome: propNome,
         tamanhoTotal,
         idProdutor: currentUser.id,
         idLocalizacao: locId
       });
-      setEditProp(null);
+      if (success) {
+        setEditProp(null);
+      }
     } else {
       let locId = localizacoes.find(l => l.locLatitude === locLatitude && l.locLongitude === locLongitude)?.id;
 
@@ -121,13 +130,15 @@ export function GerenciarPropriedadesScreen({ navigation }: GerenciarPropriedade
         locId = novaLoc.id;
       }
 
-      await addPropriedade({
+      const success = await addPropriedade({
         nome: propNome,
         tamanhoTotal,
         idProdutor: currentUser.id,
         idLocalizacao: locId
       });
-      setIsCreating(false);
+      if (success) {
+        setIsCreating(false);
+      }
     }
   };
 

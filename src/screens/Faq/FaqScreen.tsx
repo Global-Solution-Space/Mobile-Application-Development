@@ -72,9 +72,9 @@ const styles = StyleSheet.create({
 
   infoBox: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: Colors.accentGlow,
     padding: 16, borderRadius: 12, marginBottom: 24, gap: 12,
-    borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderWidth: 1, borderColor: Colors.accent,
   },
   infoText: { flex: 1, color: Colors.textSecondary, fontSize: 13, lineHeight: 20 },
 
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   questionTextActive: { color: Colors.accent },
   iconCircle: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: Colors.accentGlow,
     alignItems: 'center', justifyContent: 'center',
   },
   iconCircleActive: { backgroundColor: Colors.accent },

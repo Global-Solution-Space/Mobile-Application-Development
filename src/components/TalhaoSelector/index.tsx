@@ -16,7 +16,11 @@ export function TalhaoSelector({ talhoes, selectedTalhaoId, onSelect }: TalhaoSe
       {talhoes.length === 0 ? (
         <Text style={styles.noTalhaoText}>Nenhum talhão cadastrado no sistema.</Text>
       ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          contentContainerStyle={styles.scrollContent}
+        >
           {talhoes.map(t => (
             <TouchableOpacity
               key={t.id}
@@ -25,7 +29,10 @@ export function TalhaoSelector({ talhoes, selectedTalhaoId, onSelect }: TalhaoSe
                 selectedTalhaoId === t.id && styles.talhaoChipActive
               ]}
               onPress={() => onSelect(t.id)}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: selectedTalhaoId === t.id }}
             >
               <Text style={styles.chipEmoji}>🌱</Text>
               <Text
@@ -33,6 +40,7 @@ export function TalhaoSelector({ talhoes, selectedTalhaoId, onSelect }: TalhaoSe
                   styles.talhaoChipText,
                   selectedTalhaoId === t.id && styles.talhaoChipTextActive
                 ]}
+                numberOfLines={1}
               >
                 {t.nomeTalhao}
               </Text>
@@ -60,12 +68,13 @@ const styles = StyleSheet.create({
   },
   noTalhaoText: {
     fontSize: 13,
-    color: Colors.danger,
-    fontWeight: '600',
+    color: Colors.textMuted,
+    fontWeight: '500',
     fontStyle: 'italic',
   },
-  selectorScroll: {
+  scrollContent: {
     flexDirection: 'row',
+    paddingRight: 16,
   },
   talhaoChip: {
     flexDirection: 'row',
@@ -77,6 +86,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 14,
     marginRight: 8,
+    flexShrink: 1, 
+    maxWidth: 200,
   },
   talhaoChipActive: {
     backgroundColor: Colors.accentGlow,
@@ -90,6 +101,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     fontWeight: '600',
+    flexShrink: 1,
   },
   talhaoChipTextActive: {
     color: Colors.accent,

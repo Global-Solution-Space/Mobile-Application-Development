@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { useAppStore } from '../../store/useAppStore';
 import { TipoPlantacaoSchema } from '../../schemas';
@@ -29,8 +29,9 @@ export function ModalTipoPlantacao({ visible, onClose }: ModalTipoPlantacaoProps
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Novo Tipo de Plantação</Text>
           <Text style={styles.label}>Nome da Cultura (ex: Soja, Milho)</Text>
           <TextInput
@@ -51,14 +52,16 @@ export function ModalTipoPlantacao({ visible, onClose }: ModalTipoPlantacaoProps
               <Text style={styles.modalSaveText}>Salvar</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalOverlay: { flex: 1, backgroundColor: Colors.overlay },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { backgroundColor: Colors.bgSecondary, width: '100%', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: Colors.border },
   modalTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 20, textAlign: 'center' },
   label: { fontSize: 12, color: Colors.textSecondary, fontWeight: '600', marginBottom: 6 },

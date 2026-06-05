@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService } from '../services/api';
 import {
   Produtor, Telefone, Localizacao, Propriedade, TipoPlantacao,
-  Talhao, AlertaAgricola, TipoLog, LogAtividade, DadoTemporal, ReqApiPayload, Tarefa, ReqApi
+  Talhao, AlertaAgricola, TipoLog, LogAtividade, DadoTemporal, ReqApiPayload, ReqApi
 } from '../types';
 
 const uuid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
@@ -23,7 +23,6 @@ export interface AppStore {
   propriedades: Propriedade[];
   tiposPlantacao: TipoPlantacao[];
   talhoes: Talhao[];
-  tarefas: Tarefa[];
   alertas: AlertaAgricola[];
   logs: LogAtividade[];
   dadosTemporais: DadoTemporal[];
@@ -40,13 +39,13 @@ export interface AppStore {
 
   // Data Actions
   addLog: (tipo: TipoLog, mensagem: string) => void;
-  addTalhao: (data: Omit<Talhao, 'id' | '_links'>) => Promise<void>;
-  updateTalhao: (id: number, updates: Partial<Talhao>) => Promise<void>;
+  addTalhao: (data: Omit<Talhao, 'id' | '_links'>) => Promise<boolean>;
+  updateTalhao: (id: number, updates: Partial<Talhao>) => Promise<boolean>;
   deleteTalhao: (id: number) => Promise<void>;
   
-  addPropriedade: (data: Omit<Propriedade, 'id' | '_links'>) => Promise<void>;
-  updatePropriedade: (id: number, updates: Partial<Propriedade>) => Promise<void>;
-  deletePropriedade: (id: number) => Promise<void>;
+  addPropriedade: (data: Omit<Propriedade, 'id' | '_links'>) => Promise<boolean>;
+  updatePropriedade: (id: number, updates: Partial<Propriedade>) => Promise<boolean>;
+  deletePropriedade: (id: number) => Promise<boolean>;
   addLocalizacao: (data: Omit<Localizacao, 'id' | '_links'>) => Promise<Localizacao | null>;
   addTipoPlantacao: (data: Omit<TipoPlantacao, 'id' | '_links'>) => Promise<TipoPlantacao | null>;
 
@@ -57,11 +56,9 @@ export interface AppStore {
   updateAlerta: (id: number, data: Partial<AlertaAgricola>) => Promise<boolean>;
   deleteAlerta: (id: number) => Promise<boolean>;
   resolverEvento: (id: number) => Promise<void>;
+  reabrirEvento: (id: number) => Promise<void>;
   addAlerta: (data: Omit<AlertaAgricola, 'id' | '_links' | 'dataAlerta'>) => Promise<boolean>;
   
-  addTarefa: (data: Omit<Tarefa, 'id'>) => void;
-  toggleTarefa: (id: string) => void;
-  deleteTarefa: (id: string) => void;
 }
 
 export const useAppStore = create<AppStore>()(
@@ -79,7 +76,6 @@ export const useAppStore = create<AppStore>()(
       propriedades: [],
       tiposPlantacao: [],
       talhoes: [],
-      tarefas: [],
       alertas: [],
       logs: [],
       dadosTemporais: [],
@@ -233,8 +229,10 @@ export const useAppStore = create<AppStore>()(
           const newTalhao = await apiService.createTalhao(data);
           get().addLog('criacao', `Novo talhão cadastrado`);
           set(s => ({ talhoes: [...s.talhoes, newTalhao] }));
+          return true;
         } catch (error: any) {
           console.warn("Add talhao error:", error.message);
+          return false;
         } finally {
           set({ isLoading: false });
         }
@@ -245,8 +243,10 @@ export const useAppStore = create<AppStore>()(
         try {
           const updated = await apiService.updateTalhao(id, updates);
           set(s => ({ talhoes: s.talhoes.map(t => t.id === id ? updated : t) }));
+          return true;
         } catch (error: any) {
           console.warn("Update talhao error:", error.message);
+          return false;
         } finally {
           set({ isLoading: false });
         }
@@ -257,7 +257,11 @@ export const useAppStore = create<AppStore>()(
         try {
           await apiService.deleteTalhao(id);
           get().addLog('exclusao', `Talhão removido`);
-          set(s => ({ talhoes: s.talhoes.filter(t => t.id !== id) }));
+          set(s => ({ 
+            talhoes: s.talhoes.filter(t => t.id !== id),
+            alertas: s.alertas.filter(a => a.idTalhao !== id),
+            dadosTemporais: s.dadosTemporais.filter(d => d.idTalhao !== id)
+          }));
         } catch (error: any) {
           console.warn("Delete talhao error:", error.message);
         } finally {
@@ -271,7 +275,11 @@ export const useAppStore = create<AppStore>()(
           const res = await apiService.createPropriedade(data);
           get().addLog('criacao', `Propriedade "${res.nome}" cadastrada`);
           set(s => ({ propriedades: [...s.propriedades, res] }));
-        } catch(e: any) { console.warn(e.message); } finally { set({ isLoading: false }); }
+          return true;
+        } catch(e: any) { 
+          console.warn(e.message);
+          return false;
+        } finally { set({ isLoading: false }); }
       },
 
       updatePropriedade: async (id, updates) => {
@@ -280,7 +288,11 @@ export const useAppStore = create<AppStore>()(
           const updated = await apiService.updatePropriedade(id, updates);
           get().addLog('edicao', `Propriedade atualizada`);
           set(s => ({ propriedades: s.propriedades.map(p => p.id === id ? updated : p) }));
-        } catch(e: any) { console.warn(e.message); } finally { set({ isLoading: false }); }
+          return true;
+        } catch(e: any) { 
+          console.warn(e.message);
+          return false;
+        } finally { set({ isLoading: false }); }
       },
 
       deletePropriedade: async (id) => {
@@ -288,8 +300,24 @@ export const useAppStore = create<AppStore>()(
         try {
           await apiService.deletePropriedade(id);
           get().addLog('exclusao', `Propriedade removida`);
-          set(s => ({ propriedades: s.propriedades.filter(p => p.id !== id) }));
-        } catch(e: any) { console.warn(e.message); } finally { set({ isLoading: false }); }
+          
+          set(s => {
+            // Mapeia os IDs dos talhões que pertencem a esta propriedade
+            const talhoesExcluidos = s.talhoes.filter(t => t.idPropriedade === id).map(t => t.id);
+            
+            return {
+              propriedades: s.propriedades.filter(p => p.id !== id),
+              talhoes: s.talhoes.filter(t => t.idPropriedade !== id),
+              // Arranca também os alertas e dados que pertenciam aos talhões excluídos
+              alertas: s.alertas.filter(a => !talhoesExcluidos.includes(a.idTalhao)),
+              dadosTemporais: s.dadosTemporais.filter(d => !talhoesExcluidos.includes(d.idTalhao))
+            };
+          });
+          return true;
+        } catch(e: any) { 
+          console.warn(e.message);
+          return false;
+        } finally { set({ isLoading: false }); }
       },
 
       addLocalizacao: async (data) => {
@@ -366,6 +394,19 @@ export const useAppStore = create<AppStore>()(
         }
       },
 
+      reabrirEvento: async (id) => {
+        set({ isLoading: true });
+        try {
+          const updated = await apiService.reabrirAlerta(id);
+          set(s => ({ alertas: s.alertas.map(a => a.id === id ? updated : a) }));
+        } catch (error: any) {
+          console.warn("Reabrir evento error:", error.message);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+
       requestApiAnalysis: async (payload) => {
         set({ isLoading: true });
         try {
@@ -422,28 +463,6 @@ export const useAppStore = create<AppStore>()(
         }
       },
 
-      addTarefa: (data) => {
-        const newTarefa: Tarefa = {
-          ...data,
-          id: Date.now().toString(),
-        };
-        set(state => ({ tarefas: [...state.tarefas, newTarefa] }));
-      },
-
-      toggleTarefa: (id) => {
-        set(state => ({
-          tarefas: state.tarefas.map(t =>
-            t.id === id ? { ...t, concluida: !t.concluida } : t
-          )
-        }));
-      },
-
-      deleteTarefa: (id) => {
-        set(state => ({
-          tarefas: state.tarefas.filter(t => t.id !== id)
-        }));
-      }
-
     }),
     {
       name: 'terranova-storage',
@@ -453,7 +472,6 @@ export const useAppStore = create<AppStore>()(
         currentUser: state.currentUser,
         isLoggedIn: state.isLoggedIn,
         logs: state.logs,
-        tarefas: state.tarefas,
       }),
       onRehydrateStorage: () => (state) => {
         // Quando o AsyncStorage terminar de carregar os dados salvos:

@@ -58,7 +58,7 @@ export interface Talhao {
   idTipoPlantacao: number;
   idPropriedade: number;
   idLocalizacao: number;
-  status?: 'NORMAL' | 'CRITICO' | 'ATENCAO' | string;
+  status?: 'NORMAL' | 'CRITICO' | 'ATENCAO';
   _links?: HateoasLinks;
 }
 
@@ -83,15 +83,14 @@ export interface ReqApi {
   tipoParam: string;
   dataAnalise: string;
   tipoApiNome: string;
-  totalDados: number;
-  idTalhao: number;
+  idTipoApi: number;
 }
 
 export interface AlertaAgricola {
   id: number;
   titulo: string;
   descricao: string;
-  nivelAlerta: 'ALTO' | 'MEDIO' | 'BAIXO' | string;
+  nivelAlerta: 'ALTO' | 'MEDIO' | 'BAIXO' | 'CRITICO';
   resolvido: 'S' | 'N';
   dataAlerta?: string;
   idTalhao: number;
@@ -108,13 +107,6 @@ export interface LogAtividade {
   timestamp: string;
 }
 
-export interface Tarefa {
-  id: string;
-  titulo: string;
-  prioridade: string;
-  talhao: string;
-  concluida: boolean;
-}
 
 export type RootStackParamList = {
   Login: undefined;
@@ -123,13 +115,12 @@ export type RootStackParamList = {
   Propriedades: undefined;
   GerenciarPropriedades: undefined;
   Logs: undefined;
-  Tarefas: undefined;
   EditarPerfil: undefined;
   Faq: undefined;
   Sobre: undefined;
   Alertas: undefined;
   CriarAlerta: { editAlertaId?: number } | undefined;
-  CriarTalhao: { editTalhaoId?: number } | undefined;
+  GerenciarTalhoes: { editId?: number } | undefined;
   AnaliseDetalhes: {
     type: 'nasa' | 'satveg';
     id: number;

@@ -25,9 +25,15 @@ export function StatusBadge({ label, variant }: StatusBadgeProps) {
   const color = variantColors[variant];
 
   return (
-    <View style={[styles.badge, { backgroundColor: color + '22' }]}>
+    <View 
+      style={[styles.badge, { backgroundColor: `${color}22` }]}
+      accessibilityRole="text"
+      accessibilityLabel={`Status: ${label}`}
+    >
       <View style={[styles.dot, { backgroundColor: color }]} />
-      <Text style={[styles.text, { color }]}>{label}</Text>
+      <Text style={[styles.text, { color }]} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -40,6 +46,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
+    flexShrink: 1,
   },
   dot: {
     width: 8,
@@ -49,5 +56,6 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 11,
     fontWeight: '700',
+    flexShrink: 1,
   },
 });

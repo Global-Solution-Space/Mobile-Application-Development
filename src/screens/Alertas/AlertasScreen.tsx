@@ -8,6 +8,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Header } from '../../components/Header';
 import { EmptyState } from '../../components/EmptyState';
+import { SuccessToast } from '../../components/SuccessToast';
 import { useAppStore } from '../../store/useAppStore';
 import { AlertaAgricola } from '../../types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -44,7 +45,7 @@ const formatDate = (isoString?: string) => {
     const min = d.getMinutes().toString().padStart(2, '0');
     return `${day}/${month}/${year} às ${hr}:${min}`;
   } catch {
-    return isoString; // Fallback
+    return isoString;
   }
 };
 
@@ -53,17 +54,25 @@ interface AlertasScreenProps {
 }
 
 export function AlertasScreen({ navigation }: AlertasScreenProps) {
-  const { alertas, resolverEvento, deleteAlerta } = useAppStore();
+  const { alertas, resolverEvento, reabrirEvento, deleteAlerta } = useAppStore();
   const [filter, setFilter] = useState<'Todos' | 'BAIXO' | 'MEDIO' | 'ALTO' | 'CRITICO'>('Todos');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const handleResolve = async (id: number) => {
+    await resolverEvento(id);
+    setToastMessage('Alerta resolvido com sucesso!');
+    // Esconde o Toast automaticamente após 4 segundos
+    setTimeout(() => setToastMessage(null), 4000);
+  };
 
   // Otimização: Filtra por nível e ordena com os Não Resolvidos ('N') no topo
   const filtered = useMemo(() => {
     let baseList = filter === 'Todos' ? alertas : alertas.filter(a => a.nivelAlerta === filter);
     
-    return baseList.sort((a, b) => {
+    return [...baseList].sort((a, b) => {
       if (a.resolvido === 'N' && b.resolvido === 'S') return -1;
       if (a.resolvido === 'S' && b.resolvido === 'N') return 1;
-      return b.id - a.id; // Desempate: mais recentes primeiro
+      return b.id - a.id;
     });
   }, [alertas, filter]);
 
@@ -128,19 +137,30 @@ export function AlertasScreen({ navigation }: AlertasScreenProps) {
           </View>
 
           {!isResolved && (
-            <TouchableOpacity style={styles.resolveBtn} onPress={() => resolverEvento(item.id)} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.resolveBtn} onPress={() => handleResolve(item.id)} activeOpacity={0.7}>
               <FontAwesome5 name="check" size={12} color={Colors.bgPrimary} />
               <Text style={styles.resolveBtnText}>Marcar como Resolvido</Text>
+            </TouchableOpacity>
+          )}
+
+          {isResolved && (
+            <TouchableOpacity style={[styles.resolveBtn, { backgroundColor: Colors.warning }]} onPress={() => reabrirEvento(item.id)} activeOpacity={0.7}>
+              <FontAwesome5 name="undo" size={12} color={Colors.bgPrimary} />
+              <Text style={styles.resolveBtnText}>Reabrir Alerta</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
     );
-  }, [resolverEvento, deleteAlerta, navigation]);
+  }, [resolverEvento, reabrirEvento, deleteAlerta, navigation]);
 
   return (
     <View style={styles.container}>
       <Header title="Central de Alertas" showBackButton />
+      
+      <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+        <SuccessToast message={toastMessage || ''} visible={toastMessage !== null} />
+      </View>
 
       <View style={styles.toolbar}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>

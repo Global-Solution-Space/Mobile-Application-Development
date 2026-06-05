@@ -3,7 +3,7 @@
 // Botão de ação principal com ícone e estado de loading
 // ═══════════════════════════════════════════════════════════════
 
-import React from 'react';
+import React, { ComponentProps } from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
@@ -13,7 +13,7 @@ type ButtonVariant = 'primary' | 'outline' | 'danger';
 interface PrimaryButtonProps {
   title: string;
   onPress: () => void;
-  icon?: string;
+  icon?: ComponentProps<typeof FontAwesome5>['name'];
   isLoading?: boolean;
   disabled?: boolean;
   variant?: ButtonVariant;

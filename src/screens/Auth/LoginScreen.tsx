@@ -2,7 +2,7 @@
 // Terra Nova — Tela de Login
 // ═══════════════════════════════════════════════════════════════
 
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform
@@ -30,7 +30,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
 
   const login = useAppStore(s => s.login);
 
-  const handleLogin = useCallback(async () => {
+  const handleLogin = async () => {
     setErro('');
     const validation = LoginSchema.safeParse({ email, senha });
     if (!validation.success) {
@@ -45,7 +45,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
         setErro('E-mail ou senha incorretos. Tente novamente.');
       }
     }
-  }, [email, senha, login]);
+  };
 
   return (
     <KeyboardAvoidingView

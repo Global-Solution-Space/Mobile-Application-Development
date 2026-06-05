@@ -10,14 +10,20 @@ interface TabSelectorProps {
 
 export function TabSelector({ activeTab, onChange }: TabSelectorProps) {
   return (
-    <View style={styles.tabContainer}>
+    <View style={styles.tabContainer} accessibilityRole="tablist">
       <TouchableOpacity
         style={[styles.tabButton, activeTab === 'satveg' && styles.tabButtonActive]}
         onPress={() => onChange('satveg')}
-        activeOpacity={0.8}
+        activeOpacity={0.7}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: activeTab === 'satveg' }}
       >
         <FontAwesome5 name="satellite" size={14} color={activeTab === 'satveg' ? Colors.accent : Colors.textSecondary} />
-        <Text style={[styles.tabButtonText, activeTab === 'satveg' && styles.tabButtonTextActive]}>
+        <Text 
+          style={[styles.tabButtonText, activeTab === 'satveg' && styles.tabButtonTextActive]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
           Embrapa SATveg
         </Text>
       </TouchableOpacity>
@@ -25,10 +31,16 @@ export function TabSelector({ activeTab, onChange }: TabSelectorProps) {
       <TouchableOpacity
         style={[styles.tabButton, activeTab === 'nasa' && styles.tabButtonActive]}
         onPress={() => onChange('nasa')}
-        activeOpacity={0.8}
+        activeOpacity={0.7}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: activeTab === 'nasa' }}
       >
         <FontAwesome5 name="cloud-sun-rain" size={14} color={activeTab === 'nasa' ? Colors.accent : Colors.textSecondary} />
-        <Text style={[styles.tabButtonText, activeTab === 'nasa' && styles.tabButtonTextActive]}>
+        <Text 
+          style={[styles.tabButtonText, activeTab === 'nasa' && styles.tabButtonTextActive]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
           NASA Power
         </Text>
       </TouchableOpacity>
@@ -49,6 +61,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 14,
+    paddingHorizontal: 4,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
@@ -59,6 +72,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     fontWeight: '600',
+    flexShrink: 1,
   },
   tabButtonTextActive: {
     color: Colors.accent,

@@ -27,7 +27,7 @@ export function TelemetriaHistoryCard({
 
   // Calcula o valor máximo dinâmico para a escala da barra
   const maxVal = useMemo(() => {
-    if (config.isDynamicScale) {
+    if (config.isDynamicScale && previewData && previewData.length > 0) {
       const vals = previewData.map(d => d.val);
       const max = Math.max(...vals);
       return max > 0 ? max : 1.0; // Evita divisão por 0 se todas forem 0
@@ -39,14 +39,17 @@ export function TelemetriaHistoryCard({
     <View style={styles.card}>
       <View style={styles.header}>
         <View style={styles.headerText}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
+          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
         </View>
         {onDelete && (
           <TouchableOpacity
             style={styles.deleteBtn}
             onPress={onDelete}
             activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Deletar Análise"
           >
             <FontAwesome5 name="trash" size={13} color={Colors.danger} />
           </TouchableOpacity>
@@ -79,8 +82,13 @@ export function TelemetriaHistoryCard({
             );
           })}
 
-          <TouchableOpacity style={styles.viewAllBtn} onPress={onPressViewAll} activeOpacity={0.8}>
-            <Text style={styles.viewAllBtnText}>Ver Análise Completa & Gráfico</Text>
+          <TouchableOpacity 
+            style={styles.viewAllBtn} 
+            onPress={onPressViewAll} 
+            activeOpacity={0.7}
+            accessibilityRole="button"
+          >
+            <Text style={styles.viewAllBtnText} numberOfLines={1} adjustsFontSizeToFit>Ver Análise Completa & Gráfico</Text>
             <FontAwesome5 name="chart-bar" size={12} color={Colors.accent} />
           </TouchableOpacity>
         </View>

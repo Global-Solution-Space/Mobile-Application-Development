@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { TelemetriaHistoryCard } from '../TelemetriaHistoryCard';
@@ -70,8 +70,8 @@ export function AnalisePanel({
     [reqApis, tipoApiNome]
   );
 
-  return (
-    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
+  const renderHeader = () => (
+    <>
       <View style={styles.infoCard}>
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardDescription}>{description}</Text>
@@ -107,33 +107,45 @@ export function AnalisePanel({
       {reqApisFiltradas.length === 0 ? (
         <Text style={styles.noHistoryText}>{emptyMessage}</Text>
       ) : (
-        <>
-          <Text style={[styles.sectionHeading, { fontSize: 12, color: Colors.textSecondary, marginBottom: 8 }]}>
-            Histórico de Requisições:
-          </Text>
-          {reqApisFiltradas.map(req => {
-            const previewData = previewDataPorReq[req.id] || [];
-            return (
-              <TelemetriaHistoryCard
-                key={req.id}
-                id={req.id}
-                type={type}
-                title={`Série Consolidada (Req #${req.id})`}
-                subtitle={`Gerada em: ${new Date(req.dataAnalise).toLocaleString('pt-BR')}`}
-                previewData={previewData}
-                onDelete={() => onDeleteAnalysis?.(req.id)}
-                onPressViewAll={() => navigation.navigate('AnaliseDetalhes', {
-                  type,
-                  id: req.id,
-                  title: `Série Consolidada (Req #${req.id})`,
-                  subtitle: subtitleGrafico
-                })}
-              />
-            );
-          })}
-        </>
+        <Text style={[styles.sectionHeading, { fontSize: 12, color: Colors.textSecondary, marginBottom: 8 }]}>
+          Histórico de Requisições:
+        </Text>
       )}
-    </ScrollView>
+    </>
+  );
+
+  const renderItem = useCallback(({ item: req }: { item: ReqApi }) => {
+    const previewData = previewDataPorReq[req.id] || [];
+    return (
+      <TelemetriaHistoryCard
+        id={req.id}
+        type={type}
+        title={`Série Consolidada (Requisição #${req.id})`}
+        subtitle={`Gerada em: ${new Date(req.dataAnalise).toLocaleString('pt-BR')}`}
+        previewData={previewData}
+        onDelete={() => onDeleteAnalysis?.(req.id)}
+        onPressViewAll={() => navigation.navigate('AnaliseDetalhes', {
+          type,
+          id: req.id,
+          title: `Série Consolidada (Requisição #${req.id})`,
+          subtitle: subtitleGrafico
+        })}
+      />
+    );
+  }, [previewDataPorReq, type, subtitleGrafico, navigation, onDeleteAnalysis]);
+
+  return (
+    <FlatList
+      data={reqApisFiltradas}
+      keyExtractor={item => item.id.toString()}
+      renderItem={renderItem}
+      ListHeaderComponent={renderHeader}
+      contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
+      keyboardShouldPersistTaps="handled"
+      initialNumToRender={5}
+      windowSize={5}
+      removeClippedSubviews={true}
+    />
   );
 }
 

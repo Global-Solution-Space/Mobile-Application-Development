@@ -39,7 +39,7 @@ export function CriarAlertaScreen({ navigation, route }: CriarAlertaScreenProps)
 
   const isEditing = !!editId;
 
-  const handleSaveAlerta = React.useCallback(async () => {
+  const handleSaveAlerta = async () => {
     try {
       const parsed = alertaSchema.parse({
         titulo: titulo.trim(),
@@ -78,7 +78,7 @@ export function CriarAlertaScreen({ navigation, route }: CriarAlertaScreenProps)
         setErro(e.issues[0].message);
       }
     }
-  }, [titulo, descricao, nivelAlerta, idTalhao, isEditing, editId, updateAlerta, addAlerta, navigation]);
+  };
 
   const levels: Array<'BAIXO' | 'MEDIO' | 'ALTO' | 'CRITICO'> = ['BAIXO', 'MEDIO', 'ALTO', 'CRITICO'];
 

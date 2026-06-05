@@ -22,15 +22,15 @@ export const RegisterSchema = z.object({
 export const PropriedadeSchema = z.object({
   nome: z.string().trim().min(1, { error: 'O nome da propriedade é obrigatório' }).max(30, { error: 'O nome da propriedade deve ter no máximo 30 caracteres' }),
   tamanhoTotal: z.coerce.number({ error: 'O tamanho deve ser um número válido' }).positive({ error: 'O tamanho da propriedade deve ser maior que zero' }).max(10000, { error: 'O tamanho total da propriedade não pode exceder 10000.00 hectares.' }),
-  locLatitude: z.coerce.number({ error: 'A latitude deve ser numérica' }).min(-33.75, { message: 'A latitude deve ser no mínimo -33.75 (território brasileiro)' }).max(5.27, { message: 'A latitude deve ser no máximo 5.27 (território brasileiro)' }),
-  locLongitude: z.coerce.number({ error: 'A longitude deve ser numérica' }).min(-73.98, { message: 'A longitude deve ser no mínimo -73.98 (território brasileiro)' }).max(-34.79, { message: 'A longitude deve ser no máximo -34.79 (território brasileiro)' }),
+  locLatitude: z.coerce.number({ error: 'A latitude deve ser numérica' }).min(-34.00, { message: 'A latitude deve ser no mínimo -34.00' }).max(6.00, { message: 'A latitude deve ser no máximo 6.00' }),
+  locLongitude: z.coerce.number({ error: 'A longitude deve ser numérica' }).min(-74.00, { message: 'A longitude deve ser no mínimo -74.00' }).max(-28.00, { message: 'A longitude deve ser no máximo -28.00' }),
 });
 
 export const TalhaoSchema = z.object({
   nomeTalhao: z.string().trim().min(1, { error: 'O nome do talhão é obrigatório' }).max(30, { error: 'O nome do talhão deve ter no máximo 30 caracteres' }),
   volumArea: z.coerce.number({ error: 'A área deve ser numérica' }).positive({ error: 'A área do Talhão deve ser maior que zero' }).max(1000, { error: 'A área do talhão não pode exceder 1000.00 hectares.' }),
-  locLatitude: z.coerce.number({ error: 'A latitude deve ser numérica' }).min(-33.75, { message: 'A latitude deve ser no mínimo -33.75 (território brasileiro)' }).max(5.27, { message: 'A latitude deve ser no máximo 5.27 (território brasileiro)' }),
-  locLongitude: z.coerce.number({ error: 'A longitude deve ser numérica' }).min(-73.98, { message: 'A longitude deve ser no mínimo -73.98 (território brasileiro)' }).max(-34.79, { message: 'A longitude deve ser no máximo -34.79 (território brasileiro)' }),
+  locLatitude: z.coerce.number({ error: 'A latitude deve ser numérica' }).min(-34.00, { message: 'A latitude deve ser no mínimo -34.00' }).max(6.00, { message: 'A latitude deve ser no máximo 6.00' }),
+  locLongitude: z.coerce.number({ error: 'A longitude deve ser numérica' }).min(-74.00, { message: 'A longitude deve ser no mínimo -74.00' }).max(-28.00, { message: 'A longitude deve ser no máximo -28.00' }),
   idTipoPlantacao: z.number({ error: 'Tipo de plantação inválido' }).positive({ error: 'Selecione um tipo de plantação válido' }),
   idPropriedade: z.number({ error: 'Propriedade inválida' }).positive({ error: 'Selecione uma propriedade válida' }),
 });
@@ -86,9 +86,17 @@ export const AlertaAgricolaResponseSchema = z.object({
   id: z.number(),
   titulo: z.string(),
   descricao: z.string(),
-  nivelAlerta: z.string(),
+  nivelAlerta: z.enum(['ALTO', 'MEDIO', 'BAIXO', 'CRITICO']),
   resolvido: z.enum(['S', 'N']),
   idTalhao: z.number()
+});
+
+export const ReqApiResponseSchema = z.object({
+  id: z.number(),
+  tipoParam: z.string(),
+  dataAnalise: z.string(),
+  tipoApiNome: z.string(),
+  idTipoApi: z.number()
 });
 
 export const DadoTemporalResponseSchema = z.object({
