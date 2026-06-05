@@ -31,8 +31,6 @@ export function TalhaoSelector({ talhoes, selectedTalhaoId, onSelect }: TalhaoSe
               onPress={() => onSelect(t.id)}
               activeOpacity={0.7}
               hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
-              accessibilityRole="button"
-              accessibilityState={{ selected: selectedTalhaoId === t.id }}
             >
               <Text style={styles.chipEmoji}>🌱</Text>
               <Text

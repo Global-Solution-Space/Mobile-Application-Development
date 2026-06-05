@@ -42,25 +42,19 @@ export function ValidationError({ message, onClear, timeout = 5000 }: Validation
   if (!message) return null;
 
   return (
-    <Animated.View 
-      style={[styles.container, { opacity }]}
-      accessibilityRole="alert"
-      accessibilityLiveRegion="assertive"
-    >
+    <Animated.View style={[styles.container, { opacity }]}>
       <FontAwesome5 name="exclamation-triangle" size={13} color={Colors.danger} />
       <Text style={styles.text}>{message}</Text>
       {onClear && (
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => {
             Animated.timing(opacity, {
               toValue: 0,
               duration: 200,
               useNativeDriver: true,
             }).start(() => onClear());
-          }} 
+          }}
           hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-          accessibilityRole="button"
-          accessibilityLabel="Fechar aviso de erro"
         >
           <FontAwesome5 name="times" size={14} color={Colors.danger} style={{ opacity: 0.7 }} />
         </TouchableOpacity>

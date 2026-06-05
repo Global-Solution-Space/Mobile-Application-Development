@@ -10,13 +10,11 @@ interface TabSelectorProps {
 
 export function TabSelector({ activeTab, onChange }: TabSelectorProps) {
   return (
-    <View style={styles.tabContainer} accessibilityRole="tablist">
+    <View style={styles.tabContainer}>
       <TouchableOpacity
         style={[styles.tabButton, activeTab === 'satveg' && styles.tabButtonActive]}
         onPress={() => onChange('satveg')}
         activeOpacity={0.7}
-        accessibilityRole="tab"
-        accessibilityState={{ selected: activeTab === 'satveg' }}
       >
         <FontAwesome5 name="satellite" size={14} color={activeTab === 'satveg' ? Colors.accent : Colors.textSecondary} />
         <Text 
@@ -32,8 +30,6 @@ export function TabSelector({ activeTab, onChange }: TabSelectorProps) {
         style={[styles.tabButton, activeTab === 'nasa' && styles.tabButtonActive]}
         onPress={() => onChange('nasa')}
         activeOpacity={0.7}
-        accessibilityRole="tab"
-        accessibilityState={{ selected: activeTab === 'nasa' }}
       >
         <FontAwesome5 name="cloud-sun-rain" size={14} color={activeTab === 'nasa' ? Colors.accent : Colors.textSecondary} />
         <Text 

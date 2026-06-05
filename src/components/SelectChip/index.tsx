@@ -19,22 +19,13 @@ export function SelectChip({ label, emoji, isActive, onPress, activeColor }: Sel
   const color = activeColor || Colors.accent;
 
   return (
-    <TouchableOpacity
-      style={[
-        styles.chip,
-        isActive && { backgroundColor: `${color}22`, borderColor: color },
-      ]}
+    <TouchableOpacity style={[styles.chip, isActive && { backgroundColor: `${color}22`, borderColor: color }]}
       onPress={onPress}
       activeOpacity={0.7}
       hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
-      accessibilityRole="button"
-      accessibilityState={{ selected: isActive }}
     >
       {emoji ? <Text style={styles.emoji}>{emoji}</Text> : null}
-      <Text 
-        style={[styles.text, isActive && { color, fontWeight: '700' }]}
-        numberOfLines={1}
-      >
+      <Text style={[styles.text, isActive && { color, fontWeight: '700' }]} numberOfLines={1}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -56,7 +47,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   emoji: {
-    fontSize: 14, 
+    fontSize: 14,
   },
   text: {
     fontSize: 13,

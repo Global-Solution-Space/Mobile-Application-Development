@@ -48,8 +48,6 @@ export function TelemetriaHistoryCard({
             onPress={onDelete}
             activeOpacity={0.7}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityRole="button"
-            accessibilityLabel="Deletar Análise"
           >
             <FontAwesome5 name="trash" size={13} color={Colors.danger} />
           </TouchableOpacity>
@@ -86,7 +84,6 @@ export function TelemetriaHistoryCard({
             style={styles.viewAllBtn} 
             onPress={onPressViewAll} 
             activeOpacity={0.7}
-            accessibilityRole="button"
           >
             <Text style={styles.viewAllBtnText} numberOfLines={1} adjustsFontSizeToFit>Ver Análise Completa & Gráfico</Text>
             <FontAwesome5 name="chart-bar" size={12} color={Colors.accent} />

@@ -25,11 +25,7 @@ export function StatusBadge({ label, variant }: StatusBadgeProps) {
   const color = variantColors[variant];
 
   return (
-    <View 
-      style={[styles.badge, { backgroundColor: `${color}22` }]}
-      accessibilityRole="text"
-      accessibilityLabel={`Status: ${label}`}
-    >
+    <View style={[styles.badge, { backgroundColor: `${color}22` }]}>
       <View style={[styles.dot, { backgroundColor: color }]} />
       <Text style={[styles.text, { color }]} numberOfLines={1}>
         {label}
