@@ -2,7 +2,7 @@
 // Terra Nova — Análise de Satélite (SATveg & NASA Power)
 // ═══════════════════════════════════════════════════════════════
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   Alert, ActivityIndicator
@@ -22,25 +22,11 @@ interface AnaliseScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Tabs'>;
 }
 
-interface ApiConfig {
-  tipoApiNome: string;
-  type: 'satveg' | 'nasa';
-  title: string;
-  description: string;
-  buttonIcon: React.ComponentProps<typeof FontAwesome5>['name'];
-  buttonText: string;
-  buttonColor?: string;
-  buttonTextColor?: string;
-  sectionHeading: string;
-  emptyMessage: string;
-  subtitleGrafico: string;
-  tipoParam: string;
-  nomeExibicao: string;
-}
+import { TELEMETRY_CONFIGS } from '../../constants/telemetria';
 
 export function AnaliseScreen({ navigation }: AnaliseScreenProps) {
   const {
-    talhoes, dadosTemporais, requestApiAnalysis, fetchDadosTemporais, isLoading, localizacoes
+    talhoes, dadosTemporais, reqApis, requestApiAnalysis, fetchDadosTemporaisEHistórico, isLoading, localizacoes, deleteReqApi
   } = useAppStore();
 
   const [selectedTalhaoId, setSelectedTalhaoId] = useState<number | null>(
@@ -50,47 +36,26 @@ export function AnaliseScreen({ navigation }: AnaliseScreenProps) {
   const [activeTab, setActiveTab] = useState<'satveg' | 'nasa'>('satveg');
 
   // Ao selecionar um talhão, busca os dados temporais do backend
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedTalhaoId) {
-      fetchDadosTemporais(selectedTalhaoId);
+      fetchDadosTemporaisEHistórico(selectedTalhaoId);
     }
   }, [selectedTalhaoId]);
 
-  const handleRunApi = async (tipoApiNome: string, tipoParam: string, nomeExibicao: string) => {
+  const handleRunApi = async (tipoApiNome: string, tipoParam: string) => {
     if (!selectedTalhaoId) return;
-    const res = await requestApiAnalysis({ tipoParam, tipoApiNome, idTalhao: selectedTalhaoId });
-    if (res) Alert.alert('Sucesso', `Análise ${nomeExibicao} iniciada! Os dados temporais foram atualizados.`);
+    await requestApiAnalysis({ tipoParam, tipoApiNome, idTalhao: selectedTalhaoId });
   };
 
-  const API_CONFIGS: Record<'satveg' | 'nasa', ApiConfig> = {
-    satveg: {
-      tipoApiNome: "SATVEG",
-      type: "satveg",
-      title: "🛰️ Monitoramento de Índice de Vegetação (NDVI)",
-      description: "Conecta com a série histórica de satélite da Embrapa SATveg usando a latitude e longitude do talhão para monitorar a saúde biológica da plantação.",
-      buttonIcon: "sync-alt",
-      buttonText: "Solicitar Telemetria SATveg",
-      sectionHeading: "Dados de Vegetação Atuais",
-      emptyMessage: "Nenhum dado temporal encontrado para este talhão.",
-      subtitleGrafico: "Gráfico de NDVI",
-      tipoParam: "NDVI",
-      nomeExibicao: "SATveg",
-    },
-    nasa: {
-      tipoApiNome: "NASAPOWER",
-      type: "nasa",
-      title: "☀️ Análise de Precipitação (NASA Power)",
-      description: "Obtém dados climatológicos diários de precipitação (chuva em mm) diretamente dos satélites meteorológicos da NASA automaticamente (de 2020 até hoje).",
-      buttonIcon: "cloud-download-alt",
-      buttonText: "Solicitar Clima NASA",
-      buttonColor: Colors.info,
-      buttonTextColor: Colors.textPrimary,
-      sectionHeading: "Dados Climáticos Atuais",
-      emptyMessage: "Nenhum dado climático encontrado para este talhão.",
-      subtitleGrafico: "Precipitação Corrigida",
-      tipoParam: "PRECTOTCORR",
-      nomeExibicao: "NASA Power",
-    }
+  const handleDeleteAnalysis = (id: number) => {
+    Alert.alert(
+      'Excluir Análise',
+      'Tem certeza que deseja excluir esta análise geoespacial e todos os seus dados de telemetria?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Excluir', style: 'destructive', onPress: () => deleteReqApi(id) }
+      ]
+    );
   };
 
   const selectedTalhao = useMemo(() => 
@@ -134,16 +99,18 @@ export function AnaliseScreen({ navigation }: AnaliseScreenProps) {
           </View>
         ) : activeTab ? (
           <AnalisePanel
-            {...API_CONFIGS[activeTab]}
+            {...TELEMETRY_CONFIGS[activeTab]}
+            type={activeTab}
             selectedTalhao={selectedTalhao}
             selectedLoc={selectedLoc}
             onRunApi={() => handleRunApi(
-              API_CONFIGS[activeTab].tipoApiNome, 
-              API_CONFIGS[activeTab].tipoParam, 
-              API_CONFIGS[activeTab].nomeExibicao
+              TELEMETRY_CONFIGS[activeTab].tipoApiNome, 
+              TELEMETRY_CONFIGS[activeTab].tipoParam, 
             )}
             dadosTemporais={dadosTemporais}
+            reqApis={reqApis}
             navigation={navigation}
+            onDeleteAnalysis={handleDeleteAnalysis}
           />
         ) : null}
       </View>
@@ -178,85 +145,5 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center',
     paddingHorizontal: 40,
-  },
-  infoCard: {
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 20,
-  },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 8,
-  },
-  cardDescription: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-    marginBottom: 12,
-  },
-  gpsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.bgTertiary,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    marginBottom: 16,
-  },
-  gpsText: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-  },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: Colors.accent,
-    borderRadius: 10,
-    paddingVertical: 12,
-  },
-  actionBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.bgPrimary,
-  },
-  sectionHeading: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 12,
-  },
-  noHistoryText: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    fontStyle: 'italic',
-    paddingVertical: 10,
-  },
-  inputLabel: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-    marginTop: 12,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: Colors.bgInput,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    color: Colors.textPrimary,
-    fontSize: 13,
-    marginBottom: 6,
   },
 });

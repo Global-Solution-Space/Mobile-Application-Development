@@ -3,10 +3,12 @@
 // ═══════════════════════════════════════════════════════════════
 
 import React from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, LogBox } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import MainStack from './src/routes/MainStack';
+
+LogBox.ignoreAllLogs();
 
 const DarkTheme = {
   ...DefaultTheme,

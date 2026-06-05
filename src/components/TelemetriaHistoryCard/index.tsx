@@ -1,50 +1,39 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
+import { TELEMETRY_CONFIGS } from '../../constants/telemetria';
 
 interface TelemetriaHistoryCardProps {
   id: number;
   type: 'satveg' | 'nasa';
   title: string;
   subtitle: string;
-  dados: Record<string, number>;
+  previewData: { date: string; val: number }[];
   onDelete?: () => void;
   onPressViewAll: () => void;
 }
-
-const CARD_CONFIG = {
-  nasa: {
-    heading: 'Dados de Precipitação (preview):',
-    showProgress: false,
-    formatValue: (val: number) => `${(val || 0).toFixed(1)} mm`,
-    valColor: Colors.info,
-    fontWeight: 'bold' as const,
-  },
-  satveg: {
-    heading: 'Índice de Vegetação NDVI (preview):',
-    showProgress: true,
-    formatValue: (val: number) => (val || 0).toFixed(3),
-    valColor: Colors.textPrimary,
-    fontWeight: 'normal' as const,
-  }
-};
 
 export function TelemetriaHistoryCard({
   id,
   type,
   title,
   subtitle,
-  dados,
+  previewData,
   onDelete,
   onPressViewAll
 }: TelemetriaHistoryCardProps) {
-  const sortedEntries = Object.entries(dados || {})
-    .map(([date, val]) => ({ date, val: Number(val) }))
-    .sort((a, b) => b.date.localeCompare(a.date)); // newest first
+  const config = TELEMETRY_CONFIGS[type];
 
-  const previewData = sortedEntries.slice(0, 5);
-  const config = CARD_CONFIG[type];
+  // Calcula o valor máximo dinâmico para a escala da barra
+  const maxVal = useMemo(() => {
+    if (config.isDynamicScale) {
+      const vals = previewData.map(d => d.val);
+      const max = Math.max(...vals);
+      return max > 0 ? max : 1.0; // Evita divisão por 0 se todas forem 0
+    }
+    return 1.0; // maxVal fixo para NDVI
+  }, [previewData, config.isDynamicScale]);
 
   return (
     <View style={styles.card}>
@@ -64,30 +53,31 @@ export function TelemetriaHistoryCard({
         )}
       </View>
 
-      <Text style={styles.dataHeading}>{config.heading}</Text>
+      <Text style={styles.dataHeading}>{config.previewHeading}</Text>
 
-      {sortedEntries.length === 0 ? (
+      {(!previewData || previewData.length === 0) ? (
         <Text style={styles.noDataText}>Nenhum dado temporal disponível.</Text>
       ) : (
         <View style={styles.dataContainer}>
-          {previewData.map(({ date, val }) => (
-            <View key={date} style={styles.dataRow}>
-              <Text style={styles.dataDate}>{date}</Text>
-              
-              {config.showProgress ? (
-                // Progress bar for NDVI (0 to 1)
+          {previewData.map(({ date, val }) => {
+            const percent = Math.min(Math.max(((val || 0) / maxVal) * 100, 0), 100);
+            return (
+              <View key={date} style={styles.dataRow}>
+                <Text style={styles.dataDate}>{date}</Text>
+                
                 <View style={styles.progressContainer}>
-                  <View style={[styles.progressBar, { width: `${Math.min(Math.max((val || 0) * 100, 0), 100)}%` }]} />
+                  <View style={[styles.progressBar, { 
+                    width: `${percent}%`,
+                    backgroundColor: config.badgeColor
+                  }]} />
                 </View>
-              ) : (
-                <View style={styles.flexSpacer} />
-              )}
 
-              <Text style={[styles.dataVal, { color: config.valColor, fontWeight: config.fontWeight }]}>
-                {config.formatValue(val)}
-              </Text>
-            </View>
-          ))}
+                <Text style={[styles.dataVal, { color: config.valColor, fontWeight: config.valFontWeight }]}>
+                  {config.formatValue(val)}
+                </Text>
+              </View>
+            );
+          })}
 
           <TouchableOpacity style={styles.viewAllBtn} onPress={onPressViewAll} activeOpacity={0.8}>
             <Text style={styles.viewAllBtnText}>Ver Análise Completa & Gráfico</Text>

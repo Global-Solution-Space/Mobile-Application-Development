@@ -121,18 +121,19 @@ export type RootStackParamList = {
   Register: undefined;
   Tabs: undefined;
   Propriedades: undefined;
+  GerenciarPropriedades: undefined;
   Logs: undefined;
   Tarefas: undefined;
   EditarPerfil: undefined;
   Faq: undefined;
   Sobre: undefined;
   Alertas: undefined;
-  CriarTalhao: undefined;
+  CriarAlerta: { editAlertaId?: number } | undefined;
+  CriarTalhao: { editTalhaoId?: number } | undefined;
   AnaliseDetalhes: {
     type: 'nasa' | 'satveg';
     id: number;
     title: string;
     subtitle: string;
-    dados: Record<string, number>;
   };
 };

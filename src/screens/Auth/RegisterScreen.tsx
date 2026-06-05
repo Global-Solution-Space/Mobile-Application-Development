@@ -2,10 +2,10 @@
 // Terra Nova — Tela de Cadastro de Usuário
 // ═══════════════════════════════════════════════════════════════
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView
+  StyleSheet, KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
@@ -33,7 +33,7 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
 
   const register = useAppStore(s => s.register);
 
-  const handleRegister = async () => {
+  const handleRegister = useCallback(async () => {
     setErro('');
     const validation = RegisterSchema.safeParse({ nome, email, senha, confirmarSenha, ddd, telefone });
     
@@ -46,15 +46,12 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
     const res = await register(nomeValid, emailValid, senhaValid, dddValid || '', telValid || '');
     if (!res.success) {
       if (res.errorType === 'network') {
-        Alert.alert(
-          'Erro de Conexão',
-          'Não foi possível conectar ao servidor. Certifique-se de que a API Spring Boot está rodando e que o IP configurado em api.ts está correto.'
-        );
+        setErro('Não foi possível conectar ao servidor. Certifique-se de que a API está rodando.');
       } else {
-        Alert.alert('E-mail em uso', 'Este e-mail já está cadastrado no sistema.');
+        setErro('Este e-mail já está cadastrado no sistema.');
       }
     }
-  };
+  }, [nome, email, senha, confirmarSenha, ddd, telefone, register]);
 
   return (
     <KeyboardAvoidingView
@@ -136,7 +133,7 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
             secureTextEntry
           />
 
-          <ValidationError message={erro} />
+          <ValidationError message={erro} onClear={() => setErro('')} />
 
           <PrimaryButton
             title="Criar Conta"

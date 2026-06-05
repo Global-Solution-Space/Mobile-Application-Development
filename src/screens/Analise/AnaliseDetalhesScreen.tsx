@@ -9,6 +9,8 @@ import {
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Header } from '../../components/Header';
+import { useAppStore } from '../../store/useAppStore';
+import { TELEMETRY_CONFIGS } from '../../constants/telemetria';
 
 import { RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -25,24 +27,31 @@ interface DataEntry {
 }
 
 export function AnaliseDetalhesScreen({ route }: AnaliseDetalhesScreenProps) {
-  const { type, id, title, subtitle, dados } = route.params || {};
+  const { type, id, title, subtitle } = route.params || {};
+  const { dadosTemporais } = useAppStore();
+  const config = TELEMETRY_CONFIGS[type];
   
-  const isNasa = type === 'nasa';
-  // Memoiza os cálculos pesados matemáticos e extração do maxVal
-  const { dataEntries, tableEntries, chartMax } = useMemo(() => {
-    const typed: Record<string, number> = dados || {};
-    const entries = Object.entries(typed)
-      .map(([date, val]) => ({ date, val: Number(val) }))
-      .sort((a, b) => a.date.localeCompare(b.date)); // Ordem cronológica
+  // Memoiza os cálculos pesados matemáticos extraindo dados da store viva (Zustand)
+  const { dataEntries, tableEntries, chartEntries, chartMax } = useMemo(() => {
+    // 1. Extração rápida na memória (sem serialização pesada do React Navigation)
+    const filtered = dadosTemporais.filter(d => d.idReqApi === id);
+    
+    // 2. Ordenação cronológica garantida
+    const entries = filtered
+      .map(d => ({ date: d.dataLeitura, val: d.valor }))
+      .sort((a, b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
       
     const tEntries = [...entries].reverse(); // Mais novos primeiro na tabela
     
-    const values = entries.map(d => d.val);
-    const maxVal = values.length > 0 ? Math.max(...values) : 1;
-    const cMax = isNasa ? Math.max(maxVal * 1.1, 10) : 1.0;
+    // Gráfico: exibir apenas os últimos 30 dias para evitar que picos históricos antigos distorçam a escala Y atual
+    const chartEntries = tEntries.slice(0, 30);
     
-    return { dataEntries: entries, tableEntries: tEntries, chartMax: cMax };
-  }, [dados, isNasa]);
+    const values = chartEntries.map(d => d.val);
+    const maxVal = values.length > 0 ? Math.max(...values) : 1;
+    const cMax = config.isDynamicScale ? (maxVal > 0 ? maxVal * 1.1 : 1.0) : 1.0;
+    
+    return { dataEntries: entries, tableEntries: tEntries, chartEntries, chartMax: cMax };
+  }, [dadosTemporais, id, config.isDynamicScale]);
 
   const renderChartBar = useCallback(({ item }: { item: DataEntry }) => {
     const percent = Math.min((item.val / chartMax) * 100, 100);
@@ -53,17 +62,16 @@ export function AnaliseDetalhesScreen({ route }: AnaliseDetalhesScreenProps) {
           <View
             style={[
               styles.barFill,
-              { height: `${percent}%` },
-              isNasa ? styles.barFillNasa : styles.barFillSatveg
+              { height: `${percent}%`, backgroundColor: config.badgeColor }
             ]}
           />
         </View>
-        <Text style={styles.barLabel}>
+        <Text style={[styles.barLabel, config.isDynamicScale && { color: config.badgeColor }]}>
           {item.date.substring(8, 10)}/{item.date.substring(5, 7)}
         </Text>
       </View>
     );
-  }, [chartMax, isNasa]);
+  }, [chartMax, config]);
 
   const renderTableRow = useCallback(({ item, index }: { item: DataEntry; index: number }) => {
     const isLast = index === tableEntries.length - 1;
@@ -74,13 +82,13 @@ export function AnaliseDetalhesScreen({ route }: AnaliseDetalhesScreenProps) {
             <FontAwesome5 name="calendar-alt" size={11} color={Colors.textMuted} />
             <Text style={styles.tableDate}>{item.date}</Text>
           </View>
-          <Text style={[styles.tableVal, isNasa && styles.tableValNasa]}>
-            {isNasa ? `${item.val.toFixed(2)} mm` : item.val.toFixed(4)}
+          <Text style={[styles.tableVal, config.isDynamicScale && { color: config.badgeColor, fontWeight: '700' }]}>
+            {config.formatTableValue(item.val)}
           </Text>
         </View>
       </View>
     );
-  }, [tableEntries.length, isNasa]);
+  }, [tableEntries.length, config]);
 
   return (
     <View style={styles.container}>
@@ -92,15 +100,22 @@ export function AnaliseDetalhesScreen({ route }: AnaliseDetalhesScreenProps) {
         contentContainerStyle={styles.content}
         initialNumToRender={15}
         maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
+        getItemLayout={(_, index) => ({
+          length: 45,
+          offset: 45 * index,
+          index,
+        })}
         ListHeaderComponent={
           <>
             {/* Info Card header */}
             <View style={styles.summaryCard}>
               <View style={styles.badgeRow}>
-                <View style={[styles.typeBadge, { backgroundColor: isNasa ? Colors.info : Colors.accent }]}>
-                  <FontAwesome5 name={isNasa ? 'cloud-sun-rain' : 'satellite'} size={11} color={Colors.textPrimary} />
+                <View style={[styles.typeBadge, { backgroundColor: config.badgeColor }]}>
+                  <FontAwesome5 name={config.badgeIcon} size={11} color={Colors.textPrimary} />
                   <Text style={styles.typeBadgeText}>
-                    {isNasa ? 'NASA Power' : 'Embrapa SATveg'}
+                    {config.nomeExibicao}
                   </Text>
                 </View>
                 <Text style={styles.analysisId}>Registro #{id}</Text>
@@ -112,7 +127,13 @@ export function AnaliseDetalhesScreen({ route }: AnaliseDetalhesScreenProps) {
 
              {/* ── SEÇÃO: GRÁFICO INTERATIVO */}
              <View style={styles.chartContainer}>
-               <Text style={styles.sectionTitle}>📈 Visualização Temporal</Text>
+               <View style={styles.chartHeader}>
+                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>📈 Últimos 30 dias</Text>
+                 <View style={styles.scrollHint}>
+                   <Text style={styles.scrollHintText}>Deslize</Text>
+                   <FontAwesome5 name="arrows-alt-h" size={10} color={Colors.textSecondary} />
+                 </View>
+               </View>
  
                {dataEntries.length === 0 ? (
                  <View style={styles.emptyChart}>
@@ -147,16 +168,18 @@ export function AnaliseDetalhesScreen({ route }: AnaliseDetalhesScreenProps) {
                     </View>
 
                     {/* Horizontal Scrollable Bars */}
-                    <FlatList
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.barsScrollContainer}
-                      data={tableEntries}
-                      keyExtractor={(item) => item.date}
-                      initialNumToRender={10}
-                      maxToRenderPerBatch={5}
-                      renderItem={renderChartBar}
-                    />
+                    <View style={{ flex: 1, marginLeft: 32, overflow: 'hidden' }}>
+                      <FlatList
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.barsScrollContainer}
+                        data={chartEntries}
+                        keyExtractor={(item) => item.date}
+                        initialNumToRender={10}
+                        maxToRenderPerBatch={5}
+                        renderItem={renderChartBar}
+                      />
+                    </View>
                   </View>
                 </View>
               )}
@@ -167,7 +190,7 @@ export function AnaliseDetalhesScreen({ route }: AnaliseDetalhesScreenProps) {
               <Text style={styles.sectionTitle}>📋 Série de Medições Completa</Text>
               <View style={styles.tableHeader}>
                 <Text style={styles.thDate}>Período / Dia</Text>
-                <Text style={styles.thValue}>{isNasa ? 'Chuva (mm)' : 'NDVI (Média)'}</Text>
+                <Text style={styles.thValue}>{config.thValueText}</Text>
               </View>
             </View>
           </>
@@ -248,6 +271,27 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginBottom: 14,
   },
+  chartHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  scrollHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.bgTertiary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  scrollHintText: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
   emptyChart: {
     height: 150,
     alignItems: 'center',
@@ -319,7 +363,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   barsScrollContainer: {
-    paddingLeft: 36, // space past grid text labels
+    paddingLeft: 8,
     paddingRight: 16,
     alignItems: 'flex-end',
     height: '100%',
@@ -343,12 +387,6 @@ const styles = StyleSheet.create({
   barFill: {
     width: '100%',
     borderRadius: 6,
-  },
-  barFillSatveg: {
-    backgroundColor: Colors.accent,
-  },
-  barFillNasa: {
-    backgroundColor: Colors.info,
   },
   barFillSelected: {
     borderWidth: 1,
@@ -431,9 +469,9 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   tableVal: {
-    fontSize: 12,
-    color: Colors.accent,
-    fontWeight: '700',
+    fontSize: 14,
+    color: Colors.textPrimary,
+    fontWeight: '600',
   },
   tableValNasa: {
     color: Colors.info,

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Alert, Platform } from 'react-native';
+import { Alert } from 'react-native';
 import { 
   Produtor, Telefone, Localizacao, Propriedade, TipoPlantacao, 
   Talhao, ReqApiPayload, ReqApi, DadoTemporal, AlertaAgricola, PaginatedResponse 
@@ -12,8 +12,7 @@ import {
 } from '../schemas';
 
 const api = axios.create({
-  // Endereço de IP local da máquina para que dispositivos físicos e emuladores consigam conectar à API Java
-  baseURL: 'http://10.165.38.175:8080/api',
+  baseURL: 'http://192.168.1.7:8080/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -42,12 +41,7 @@ api.interceptors.response.use(
       }
     }
     
-    if (Platform.OS === 'web') {
-      window.alert('Erro na API: ' + msg);
-    } else {
-      Alert.alert('Erro na API', msg);
-    }
-    
+    Alert.alert('Erro na API', msg);
     return Promise.reject(error);
   }
 );
@@ -127,6 +121,13 @@ export const apiService = {
     const res = await api.post<Propriedade>('/propriedades', data);
     return res.data;
   },
+  updatePropriedade: async (id: number, data: Partial<Propriedade>) => {
+    const res = await api.put<Propriedade>(`/propriedades/${id}`, data);
+    return res.data;
+  },
+  deletePropriedade: async (id: number) => {
+    await api.delete(`/propriedades/${id}`);
+  },
 
   // ── Tipos de Plantacao ──
   getTiposPlantacao: async () => {
@@ -164,6 +165,13 @@ export const apiService = {
     const res = await api.post<ReqApi>('/req-api', data);
     return res.data;
   },
+  getReqApisByTalhao: async (idTalhao: number) => {
+    const res = await api.get<ReqApi[]>(`/req-api/talhao/${idTalhao}`);
+    return res.data;
+  },
+  deleteReqApi: async (id: number) => {
+    await api.delete(`/req-api/${id}`);
+  },
 
   // ── Dados Temporais (Resultados das APIs unificados) ──
   getDadosTemporais: async (idTalhao: number) => {
@@ -187,6 +195,13 @@ export const apiService = {
   updateAlerta: async (id: number, data: Partial<AlertaAgricola>) => {
     const res = await api.put<AlertaAgricola>(`/alertas/${id}`, data);
     return res.data;
+  },
+  resolveAlerta: async (id: number) => {
+    const res = await api.patch<AlertaAgricola>(`/alertas/${id}/resolver`);
+    return res.data;
+  },
+  deleteAlerta: async (id: number) => {
+    await api.delete(`/alertas/${id}`);
   },
 };
 

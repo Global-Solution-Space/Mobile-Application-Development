@@ -2,10 +2,10 @@
 // Terra Nova — Tela de Login
 // ═══════════════════════════════════════════════════════════════
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, Alert, Animated
+  StyleSheet, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
@@ -30,7 +30,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
 
   const login = useAppStore(s => s.login);
 
-  const handleLogin = async () => {
+  const handleLogin = useCallback(async () => {
     setErro('');
     const validation = LoginSchema.safeParse({ email, senha });
     if (!validation.success) {
@@ -40,15 +40,12 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     const res = await login(validation.data.email, validation.data.senha);
     if (!res.success) {
       if (res.errorType === 'network') {
-        Alert.alert(
-          'Erro de Conexão',
-          'Não foi possível conectar ao servidor. Certifique-se de que a API Spring Boot está rodando e que o IP configurado em api.ts está correto.'
-        );
+        setErro('Não foi possível conectar ao servidor. Certifique-se de que a API está rodando.');
       } else {
-        Alert.alert('Falha no login', 'E-mail ou senha incorretos. Tente novamente.');
+        setErro('E-mail ou senha incorretos. Tente novamente.');
       }
     }
-  };
+  }, [email, senha, login]);
 
   return (
     <KeyboardAvoidingView
@@ -88,7 +85,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
             onRightIconPress={() => setShowSenha(!showSenha)}
           />
 
-          <ValidationError message={erro} />
+          <ValidationError message={erro} onClear={() => setErro('')} />
 
           <PrimaryButton
             title="Entrar no Sistema"

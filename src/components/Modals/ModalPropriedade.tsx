@@ -101,7 +101,7 @@ export function ModalPropriedade({ visible, onClose }: ModalPropriedadeProps) {
               </View>
             </View>
 
-            <ValidationError message={erro} />
+            <ValidationError message={erro} onClear={() => setErro('')} />
 
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancel} onPress={onClose}>

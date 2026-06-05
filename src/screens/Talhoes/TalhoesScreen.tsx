@@ -27,7 +27,7 @@ interface TalhoesScreenProps {
 
 export function TalhoesScreen({ navigation }: TalhoesScreenProps) {
   const {
-    talhoes, deleteTalhao, updateTalhao, propriedades, tiposPlantacao, localizacoes, addLocalizacao
+    talhoes, deleteTalhao, updateTalhao, propriedades, tiposPlantacao, localizacoes, addLocalizacao, alertas
   } = useAppStore();
 
   const [editTalhao, setEditTalhao] = useState<Talhao | null>(null);
@@ -90,7 +90,7 @@ export function TalhoesScreen({ navigation }: TalhoesScreenProps) {
     if (!finalLocId) {
       const newLoc = await addLocalizacao({ locLatitude, locLongitude });
       if (!newLoc) {
-        Alert.alert('Erro', 'Não foi possível cadastrar a nova localização.');
+        setEditErro('Não foi possível cadastrar a nova localização.');
         return;
       }
       finalLocId = newLoc.id;
@@ -184,7 +184,7 @@ export function TalhoesScreen({ navigation }: TalhoesScreenProps) {
             </View>
           </View>
 
-          <ValidationError message={editErro} />
+          <ValidationError message={editErro} onClear={() => setEditErro('')} />
 
           <View style={styles.actionRow}>
             <View style={{ flex: 1 }}>
@@ -212,6 +212,22 @@ export function TalhoesScreen({ navigation }: TalhoesScreenProps) {
     const prop = propriedades.find(p => p.id === item.idPropriedade);
     const tipo = tiposPlantacao.find(t => t.id === item.idTipoPlantacao);
 
+    // Lógica para determinar o status com base nos alertas da API
+    const alertasDoTalhao = alertas.filter(a => a.idTalhao === item.id && a.resolvido === 'N');
+    let statusDinamico = 'NORMAL';
+    let badgeVariant: 'success' | 'warning' | 'danger' = 'success';
+
+    const temAlertaAlto = alertasDoTalhao.some(a => a.nivelAlerta === 'ALTO' || a.nivelAlerta === 'CRITICO');
+    const temAlertaMedio = alertasDoTalhao.some(a => a.nivelAlerta === 'MEDIO');
+
+    if (temAlertaAlto) {
+      statusDinamico = 'CRÍTICO';
+      badgeVariant = 'danger';
+    } else if (temAlertaMedio) {
+      statusDinamico = 'ATENÇÃO';
+      badgeVariant = 'warning';
+    }
+
     return (
       <View style={styles.talhaoCard}>
         <View style={styles.talhaoHeader}>
@@ -222,7 +238,9 @@ export function TalhoesScreen({ navigation }: TalhoesScreenProps) {
               <Text style={styles.talhaoPropriedade}>{prop?.nome || 'Desconhecida'}</Text>
             </View>
           </View>
-          <StatusBadge label={item.status || 'NORMAL'} variant={item.status === 'CRITICO' ? 'danger' : 'success'} />
+          {statusDinamico !== 'NORMAL' && (
+            <StatusBadge label={statusDinamico} variant={badgeVariant} />
+          )}
         </View>
 
         <View style={styles.talhaoDetails}>

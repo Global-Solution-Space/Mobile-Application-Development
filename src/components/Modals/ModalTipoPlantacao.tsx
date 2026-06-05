@@ -41,7 +41,7 @@ export function ModalTipoPlantacao({ visible, onClose }: ModalTipoPlantacaoProps
             placeholderTextColor={Colors.textMuted}
           />
 
-          <ValidationError message={erro} />
+          <ValidationError message={erro} onClear={() => setErro('')} />
 
           <View style={styles.modalActions}>
             <TouchableOpacity style={styles.modalCancel} onPress={onClose}>

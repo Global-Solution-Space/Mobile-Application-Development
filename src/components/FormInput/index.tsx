@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import React from 'react';
-import { View, Text, TextInput, StyleSheet, TextInputProps, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, TextInputProps, Platform } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 
@@ -19,12 +19,12 @@ export function FormInput({ iconName, label, rightIcon, onRightIconPress, style,
   return (
     <View style={styles.wrapper}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
-      <View style={styles.container}>
+      <View style={[styles.container, rest.multiline && { alignItems: 'flex-start', paddingVertical: 14, minHeight: 100 }]}>
         {iconName ? (
-          <FontAwesome5 name={iconName} size={16} color={Colors.textMuted} style={styles.icon} />
+          <FontAwesome5 name={iconName} size={16} color={Colors.textMuted} style={[styles.icon, rest.multiline && { marginTop: Platform.OS === 'ios' ? 2 : 4 }]} />
         ) : null}
         <TextInput
-          style={[styles.input, style]}
+          style={[styles.input, style, rest.multiline && { textAlignVertical: 'top', paddingTop: Platform.OS === 'android' ? 0 : undefined }]}
           placeholderTextColor={Colors.textMuted}
           {...rest}
         />
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     paddingHorizontal: 14,
-    height: 52,
+    minHeight: 52,
   },
   icon: {
     marginRight: 12,

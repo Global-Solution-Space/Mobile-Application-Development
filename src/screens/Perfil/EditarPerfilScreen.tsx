@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, KeyboardAvoidingView, Platform
@@ -9,6 +9,7 @@ import { Colors } from '../../theme/colors';
 import { Header } from '../../components/Header';
 import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
+import { ValidationError } from '../../components/ValidationError';
 import { useAppStore } from '../../store/useAppStore';
 
 export function EditarPerfilScreen() {
@@ -30,7 +31,7 @@ export function EditarPerfilScreen() {
   const emailValido = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   const senhasIguais = novaSenha.length > 0 && novaSenha === confirmarSenha;
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     setErro('');
 
     if (!nome.trim()) {
@@ -59,16 +60,10 @@ export function EditarPerfilScreen() {
       numero: telefone.trim(),
     };
 
-    // Atualiza os dados no banco de dados global
     updateProfile(updates, telefoneUpdates);
 
-    // Na Web, o Alert do React Native bloqueia a navegação. 
-    // Por isso, acionamos a saída da tela imediatamente!
-    if (Platform.OS === 'web') {
-        window.alert('✅ Perfil atualizado com sucesso!');
-    }
     navigation.goBack();
-  };
+  }, [nome, novoEmail, novaSenha, confirmarSenha, ddd, telefone, senhasIguais, updateProfile, navigation]);
 
   return (
     <View style={styles.container}>
@@ -193,12 +188,7 @@ export function EditarPerfilScreen() {
           </View>
 
           {/* ── ERRO GERAL ── */}
-          {erro !== '' && (
-            <View style={styles.errorBox}>
-              <FontAwesome5 name="exclamation-triangle" size={13} color={Colors.danger} />
-              <Text style={styles.errorText}>{erro}</Text>
-            </View>
-          )}
+          <ValidationError message={erro} onClear={() => setErro('')} />
 
           {/* ── BOTÕES ── */}
           <View style={styles.actions}>
@@ -278,15 +268,6 @@ const styles = StyleSheet.create({
   // hints
   hintOk:    { fontSize: 11, color: Colors.accent, marginTop: -8, marginBottom: 14, marginLeft: 2 },
   hintError: { fontSize: 11, color: Colors.danger,  marginTop: -8, marginBottom: 14, marginLeft: 2 },
-
-  // erro geral
-  errorBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: Colors.dangerBg, padding: 12,
-    borderRadius: 10, marginHorizontal: 20, marginTop: 16,
-    borderWidth: 0.5, borderColor: Colors.danger,
-  },
-  errorText: { color: Colors.danger, fontSize: 13, flex: 1 },
 
   // botões
   actions: { padding: 20, gap: 10, marginTop: 4 },

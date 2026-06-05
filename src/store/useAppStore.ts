@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService } from '../services/api';
 import {
   Produtor, Telefone, Localizacao, Propriedade, TipoPlantacao,
-  Talhao, AlertaAgricola, TipoLog, LogAtividade, DadoTemporal, ReqApiPayload, Tarefa
+  Talhao, AlertaAgricola, TipoLog, LogAtividade, DadoTemporal, ReqApiPayload, Tarefa, ReqApi
 } from '../types';
 
 const uuid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
@@ -27,6 +27,7 @@ export interface AppStore {
   alertas: AlertaAgricola[];
   logs: LogAtividade[];
   dadosTemporais: DadoTemporal[];
+  reqApis: ReqApi[];
 
   // Initialization
   fetchInitialData: () => Promise<void>;
@@ -44,13 +45,19 @@ export interface AppStore {
   deleteTalhao: (id: number) => Promise<void>;
   
   addPropriedade: (data: Omit<Propriedade, 'id' | '_links'>) => Promise<void>;
+  updatePropriedade: (id: number, updates: Partial<Propriedade>) => Promise<void>;
+  deletePropriedade: (id: number) => Promise<void>;
   addLocalizacao: (data: Omit<Localizacao, 'id' | '_links'>) => Promise<Localizacao | null>;
   addTipoPlantacao: (data: Omit<TipoPlantacao, 'id' | '_links'>) => Promise<TipoPlantacao | null>;
 
   requestApiAnalysis: (payload: ReqApiPayload) => Promise<boolean>;
-  fetchDadosTemporais: (idTalhao: number) => Promise<void>;
+  fetchDadosTemporaisEHistórico: (idTalhao: number) => Promise<void>;
+  deleteReqApi: (id: number) => Promise<boolean>;
 
+  updateAlerta: (id: number, data: Partial<AlertaAgricola>) => Promise<boolean>;
+  deleteAlerta: (id: number) => Promise<boolean>;
   resolverEvento: (id: number) => Promise<void>;
+  addAlerta: (data: Omit<AlertaAgricola, 'id' | '_links' | 'dataAlerta'>) => Promise<boolean>;
   
   addTarefa: (data: Omit<Tarefa, 'id'>) => void;
   toggleTarefa: (id: string) => void;
@@ -76,6 +83,7 @@ export const useAppStore = create<AppStore>()(
       alertas: [],
       logs: [],
       dadosTemporais: [],
+      reqApis: [],
 
       addLog: (tipo, mensagem) => {
         const user = get().currentUser;
@@ -261,7 +269,26 @@ export const useAppStore = create<AppStore>()(
         set({ isLoading: true });
         try {
           const res = await apiService.createPropriedade(data);
+          get().addLog('criacao', `Propriedade "${res.nome}" cadastrada`);
           set(s => ({ propriedades: [...s.propriedades, res] }));
+        } catch(e: any) { console.warn(e.message); } finally { set({ isLoading: false }); }
+      },
+
+      updatePropriedade: async (id, updates) => {
+        set({ isLoading: true });
+        try {
+          const updated = await apiService.updatePropriedade(id, updates);
+          get().addLog('edicao', `Propriedade atualizada`);
+          set(s => ({ propriedades: s.propriedades.map(p => p.id === id ? updated : p) }));
+        } catch(e: any) { console.warn(e.message); } finally { set({ isLoading: false }); }
+      },
+
+      deletePropriedade: async (id) => {
+        set({ isLoading: true });
+        try {
+          await apiService.deletePropriedade(id);
+          get().addLog('exclusao', `Propriedade removida`);
+          set(s => ({ propriedades: s.propriedades.filter(p => p.id !== id) }));
         } catch(e: any) { console.warn(e.message); } finally { set({ isLoading: false }); }
       },
 
@@ -285,10 +312,52 @@ export const useAppStore = create<AppStore>()(
         } catch(e: any) { console.warn(e.message); return null; } finally { set({ isLoading: false }); }
       },
 
+      addAlerta: async (data) => {
+        set({ isLoading: true });
+        try {
+          const res = await apiService.createAlerta(data);
+          set(s => ({ alertas: [res, ...s.alertas] }));
+          return true;
+        } catch (error: any) {
+          console.warn("Criar alerta error:", error.message);
+          return false;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      updateAlerta: async (id, data) => {
+        set({ isLoading: true });
+        try {
+          const updated = await apiService.updateAlerta(id, data);
+          set(s => ({ alertas: s.alertas.map(a => a.id === id ? updated : a) }));
+          return true;
+        } catch (error: any) {
+          console.warn("Update alerta error:", error.message);
+          return false;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      deleteAlerta: async (id) => {
+        set({ isLoading: true });
+        try {
+          await apiService.deleteAlerta(id);
+          set(s => ({ alertas: s.alertas.filter(a => a.id !== id) }));
+          return true;
+        } catch (error: any) {
+          console.warn("Delete alerta error:", error.message);
+          return false;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
       resolverEvento: async (id) => {
         set({ isLoading: true });
         try {
-          const updated = await apiService.updateAlerta(id, { resolvido: 'S' });
+          const updated = await apiService.resolveAlerta(id);
           set(s => ({ alertas: s.alertas.map(a => a.id === id ? updated : a) }));
         } catch (error: any) {
           console.warn("Resolver evento error:", error.message);
@@ -301,7 +370,15 @@ export const useAppStore = create<AppStore>()(
         set({ isLoading: true });
         try {
           await apiService.createReqApi(payload);
-          await get().fetchDadosTemporais(payload.idTalhao);
+          await get().fetchDadosTemporaisEHistórico(payload.idTalhao);
+          
+          // Baixa os novos alertas do produtor, pois o Java pode ter gerado alertas automáticos
+          const user = get().currentUser;
+          if (user) {
+            const novosAlertas = await apiService.getAlertasDoProdutor(user.id);
+            set({ alertas: novosAlertas });
+          }
+
           get().addLog('sistema', `Nova análise ${payload.tipoParam} iniciada para talhão #${payload.idTalhao}`);
           return true;
         } catch (error: any) {
@@ -312,13 +389,34 @@ export const useAppStore = create<AppStore>()(
         }
       },
 
-      fetchDadosTemporais: async (idTalhao) => {
+      fetchDadosTemporaisEHistórico: async (idTalhao) => {
         set({ isLoading: true });
         try {
-          const dados = await apiService.getDadosTemporais(idTalhao);
-          set({ dadosTemporais: dados });
+          const [dados, reqs] = await Promise.all([
+            apiService.getDadosTemporais(idTalhao),
+            apiService.getReqApisByTalhao(idTalhao)
+          ]);
+          set({ dadosTemporais: dados, reqApis: reqs });
         } catch (error: any) {
           console.warn("Fetch Dados Temporais error:", error.message);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      deleteReqApi: async (id) => {
+        set({ isLoading: true });
+        try {
+          await apiService.deleteReqApi(id);
+          set(s => ({
+            reqApis: s.reqApis.filter(r => r.id !== id),
+            dadosTemporais: s.dadosTemporais.filter(d => d.idReqApi !== id)
+          }));
+          get().addLog('sistema', `Exclusão da análise #${id} efetuada com sucesso`);
+          return true;
+        } catch (error: any) {
+          console.warn("Delete reqApi error:", error.message);
+          return false;
         } finally {
           set({ isLoading: false });
         }

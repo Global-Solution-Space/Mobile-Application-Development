@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -15,12 +15,14 @@ export function PerfilScreen() {
   
   const { currentUser, talhoes, propriedades, telefones, logout } = useAppStore();
 
-  const phone = telefones.find((t) => t.idProdutor === currentUser?.id);
-  const phoneFormatted = phone ? `(${phone.ddd}) ${phone.numero}` : 'Não cadastrado';
+  const phoneFormatted = useMemo(() => {
+    const phone = telefones.find((t) => t.idProdutor === currentUser?.id);
+    return phone ? `(${phone.ddd}) ${phone.numero}` : 'Não cadastrado';
+  }, [telefones, currentUser?.id]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout();
-  };
+  }, [logout]);
 
   const statusBarHeight = Platform.OS === 'android'
     ? (StatusBar.currentHeight || insets.top || 30)
@@ -28,7 +30,7 @@ export function PerfilScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      {/* CABEÇALHO DO PERFIL */}
+      {/* Cabeçalho do Perfil */}
       <View style={[styles.header, { paddingTop: statusBarHeight + 30 }]}>
         <View style={styles.avatarBox}>
           <FontAwesome5 name="user" size={32} color={Colors.accent} />
@@ -41,7 +43,7 @@ export function PerfilScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* ESTATÍSTICAS DINÂMICAS */}
+      {/* Estatísticas dinâmicas */}
       <View style={styles.statsContainer}>
         <View style={styles.statBox}>
           <Text style={styles.statNum}>{talhoes.length}</Text>
@@ -53,7 +55,7 @@ export function PerfilScreen() {
         </View>
       </View>
 
-      {/* INFORMAÇÕES */}
+      {/* Informações */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>INFORMAÇÕES</Text>
         <View style={styles.infoRow}>
@@ -69,15 +71,14 @@ export function PerfilScreen() {
 
       </View>
 
-      {/* CONFIGURAÇÕES E AJUDA */}
+      {/* Configurações e ajuda */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>CONFIGURAÇÕES E AJUDA</Text>
         
-        <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('Alertas')}>
-          <Text style={styles.menuText}>Central de Alertas</Text>
+        <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('Logs')}>
+          <Text style={styles.menuText}>Log de Auditoria</Text>
           <FontAwesome5 name="chevron-right" size={12} color={Colors.accent} />
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('Faq')}>
           <Text style={styles.menuText}>Manual de Cultivo (FAQ)</Text>
           <FontAwesome5 name="chevron-right" size={12} color={Colors.accent} />

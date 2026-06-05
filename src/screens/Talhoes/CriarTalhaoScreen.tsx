@@ -9,12 +9,10 @@ import {
 } from 'react-native';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { FormInput } from '../../components/FormInput';
-import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Header } from '../../components/Header';
 import { SelectChip } from '../../components/SelectChip';
 import { ModalTipoPlantacao } from '../../components/Modals/ModalTipoPlantacao';
-import { ModalPropriedade } from '../../components/Modals/ModalPropriedade';
 import { useAppStore } from '../../store/useAppStore';
 import { TalhaoSchema } from '../../schemas';
 import { ValidationError } from '../../components/ValidationError';
@@ -42,9 +40,7 @@ export function CriarTalhaoScreen({ navigation }: CriarTalhaoScreenProps) {
 
   const [erro, setErro] = useState('');
 
-  // Modais de Criação Rápida
   const [modalTipo, setModalTipo] = useState(false);
-  const [modalProp, setModalProp] = useState(false);
 
   const handleSaveTalhao = async () => {
     setErro('');
@@ -85,8 +81,6 @@ export function CriarTalhaoScreen({ navigation }: CriarTalhaoScreenProps) {
       idPropriedade,
       idLocalizacao: locId,
     });
-
-    Alert.alert('Sucesso', 'Talhão cadastrado com sucesso!');
     
     // Reseta form
     setNome('');
@@ -149,12 +143,7 @@ export function CriarTalhaoScreen({ navigation }: CriarTalhaoScreenProps) {
               )}
             </ScrollView>
 
-            <View style={[styles.labelRow, { marginTop: 16 }]}>
-              <Text style={styles.label}>Propriedade *</Text>
-              <TouchableOpacity onPress={() => setModalProp(true)}>
-                <Text style={styles.addLink}>+ Nova</Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={[styles.label, { marginTop: 16, marginBottom: 8 }]}>Propriedade *</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
               {propriedades.map(p => (
                 <SelectChip
@@ -197,21 +186,30 @@ export function CriarTalhaoScreen({ navigation }: CriarTalhaoScreenProps) {
             </View>
           </View>
 
-          <ValidationError message={erro} />
+          <ValidationError message={erro} onClear={() => setErro('')} />
 
-          <View style={{ paddingHorizontal: 20, marginTop: 8 }}>
-            <PrimaryButton
-              title="Salvar Talhão"
-              icon="save"
-              onPress={handleSaveTalhao}
-            />
+          <View style={styles.actionRow}>
+            <View style={{ flex: 1 }}>
+              <PrimaryButton
+                title="Voltar"
+                icon="arrow-left"
+                variant="outline"
+                onPress={() => navigation.goBack()}
+              />
+            </View>
+            <View style={{ flex: 2 }}>
+              <PrimaryButton
+                title="Salvar Talhão"
+                icon="save"
+                onPress={handleSaveTalhao}
+              />
+            </View>
           </View>
 
         </ScrollView>
       </KeyboardAvoidingView>
 
       <ModalTipoPlantacao visible={modalTipo} onClose={() => setModalTipo(false)} />
-      <ModalPropriedade visible={modalProp} onClose={() => setModalProp(false)} />
 
     </View>
   );
@@ -224,6 +222,12 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 20, paddingTop: 24, paddingBottom: 16,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginTop: 8,
+    gap: 12,
   },
   sectionTitle: {
     fontSize: 11, fontWeight: '700',

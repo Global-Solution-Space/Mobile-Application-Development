@@ -24,18 +24,19 @@ export function PropriedadesScreen({ navigation }: PropriedadesScreenProps) {
 
   const renderItem = ({ item }: { item: Propriedade }) => {
     const talhoesNaPropriedade = talhoes.filter(l => l.idPropriedade === item.id);
-    const capacidadeSimulada = 10;
-    const ativos = talhoesNaPropriedade.length;
+    const areaOcupada = talhoesNaPropriedade.reduce((acc, curr) => acc + curr.volumArea, 0);
+    const totalArea = item.tamanhoTotal;
+    const hasTalhoes = talhoesNaPropriedade.length > 0;
 
     return (
       <PropriedadeCard 
         nome={item.nome}
         tamanhoTotal={item.tamanhoTotal}
-        ativos={ativos}
-        cap={capacidadeSimulada}
+        ativos={areaOcupada}
+        cap={totalArea}
       >
         {/* Talhões nesta propriedade */}
-        {ativos > 0 && (
+        {hasTalhoes && (
           <View style={styles.talhoesSection}>
             <Text style={styles.talhoesSectionTitle}>Talhões Vinculados:</Text>
             {talhoesNaPropriedade.map(t => (
@@ -47,7 +48,7 @@ export function PropriedadesScreen({ navigation }: PropriedadesScreenProps) {
           </View>
         )}
 
-        {ativos === 0 && (
+        {!hasTalhoes && (
           <View style={styles.emptySlot}>
             <FontAwesome5 name="inbox" size={14} color={Colors.textMuted} />
             <Text style={styles.emptySlotText}>Propriedade sem talhões vinculados</Text>

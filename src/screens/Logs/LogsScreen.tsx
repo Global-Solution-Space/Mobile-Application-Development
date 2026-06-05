@@ -40,7 +40,7 @@ export function LogsScreen({ navigation }: LogsScreenProps) {
   const { logs } = useAppStore();
 
   const renderItem = ({ item, index }: { item: LogAtividade; index: number }) => {
-    const cfg = tipoConfig[item.tipo];
+    const cfg = tipoConfig[item.tipo] || { icon: 'info-circle', color: Colors.textSecondary, label: 'Info' };
     return (
       <View style={styles.logItem}>
         <View style={styles.timeline}>

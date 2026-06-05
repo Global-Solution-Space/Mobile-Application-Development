@@ -5,13 +5,15 @@ import { useAppStore }        from '../store/useAppStore';
 import { LoginScreen }        from '../screens/Auth/LoginScreen';
 import { RegisterScreen }     from '../screens/Auth/RegisterScreen';
 import { TabRoutes }          from './TabRoutes';
-import { PropriedadesScreen } from '../screens/Propriedades/PropriedadesScreen';
+import { PropriedadesScreen }          from '../screens/Propriedades/PropriedadesScreen';
+import { GerenciarPropriedadesScreen } from '../screens/Propriedades/GerenciarPropriedadesScreen';
 import { LogsScreen }         from '../screens/Logs/LogsScreen';
 import { TarefasScreen }      from '../screens/Tarefas/TarefasScreen';
 import { EditarPerfilScreen } from '../screens/Perfil/EditarPerfilScreen';
 import { FaqScreen }          from '../screens/Faq/FaqScreen';
 import { SobreScreen }        from '../screens/Sobre/SobreScreen';
 import { AlertasScreen }      from '../screens/Alertas/AlertasScreen';
+import { CriarAlertaScreen }  from '../screens/Alertas/CriarAlertaScreen';
 import { CriarTalhaoScreen }  from '../screens/Talhoes/CriarTalhaoScreen';
 import { AnaliseDetalhesScreen } from '../screens/Analise/AnaliseDetalhesScreen';
 
@@ -32,13 +34,15 @@ export default function MainStack() {
       ) : (
         <>
           <Stack.Screen name="Tabs"         component={TabRoutes} />
-          <Stack.Screen name="Propriedades" component={PropriedadesScreen} />
+          <Stack.Screen name="Propriedades"           component={PropriedadesScreen} />
+          <Stack.Screen name="GerenciarPropriedades"  component={GerenciarPropriedadesScreen} />
           <Stack.Screen name="Logs"         component={LogsScreen} />
           <Stack.Screen name="Tarefas"      component={TarefasScreen} />
           <Stack.Screen name="EditarPerfil" component={EditarPerfilScreen} />
           <Stack.Screen name="Faq"          component={FaqScreen} />
           <Stack.Screen name="Sobre"        component={SobreScreen} />
           <Stack.Screen name="Alertas"      component={AlertasScreen} />
+          <Stack.Screen name="CriarAlerta"  component={CriarAlertaScreen} />
           <Stack.Screen name="CriarTalhao"  component={CriarTalhaoScreen} />
           <Stack.Screen name="AnaliseDetalhes" component={AnaliseDetalhesScreen} />
         </>

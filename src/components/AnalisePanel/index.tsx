@@ -3,70 +3,79 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { TelemetriaHistoryCard } from '../TelemetriaHistoryCard';
-import { Talhao, Localizacao, DadoTemporal } from '../../types';
+import { ValidationError } from '../ValidationError';
+import { Talhao, Localizacao, DadoTemporal, ReqApi } from '../../types';
 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
 
+import { TELEMETRY_CONFIGS } from '../../constants/telemetria';
+
 interface AnalisePanelProps {
-  tipoApiNome: string;
   type: 'satveg' | 'nasa';
-  title: string;
-  description: string;
-  buttonIcon: React.ComponentProps<typeof FontAwesome5>['name'];
-  buttonText: string;
-  buttonColor?: string;
-  buttonTextColor?: string;
-  sectionHeading: string;
-  emptyMessage: string;
-  subtitleGrafico: string;
   selectedTalhao?: Talhao;
   selectedLoc?: Localizacao | null;
   onRunApi: () => void;
   dadosTemporais: DadoTemporal[];
+  reqApis?: ReqApi[];
   navigation: NativeStackNavigationProp<RootStackParamList, 'Tabs'>;
+  onDeleteAnalysis?: (id: number) => void;
 }
 
 export function AnalisePanel({
-  tipoApiNome,
   type,
-  title,
-  description,
-  buttonIcon,
-  buttonText,
-  buttonColor = Colors.accent,
-  buttonTextColor = Colors.bgPrimary,
-  sectionHeading,
-  emptyMessage,
-  subtitleGrafico,
   selectedTalhao,
   selectedLoc,
   onRunApi,
   dadosTemporais,
-  navigation
+  reqApis = [],
+  navigation,
+  onDeleteAnalysis
 }: AnalisePanelProps) {
+  const config = TELEMETRY_CONFIGS[type];
+  const { tipoApiNome, title, description, buttonIcon, buttonText, buttonColor, buttonTextColor, sectionHeading, emptyMessage, subtitleGrafico } = config;
 
-  const dadosAgregados = useMemo(() => {
-    const dataFiltrada = dadosTemporais.filter(d => d.tipoApiNome === tipoApiNome);
-    if (dataFiltrada.length === 0) return null;
-    
-    const dadosObj: { [key: string]: number } = {};
-    dataFiltrada.forEach(d => {
-       dadosObj[d.dataLeitura] = d.valor;
+  const isSatveg = type === 'satveg';
+  const outOfBrazil = isSatveg && selectedLoc && (
+    selectedLoc.locLatitude < -33.75 || selectedLoc.locLatitude > 5.27 ||
+    selectedLoc.locLongitude < -73.98 || selectedLoc.locLongitude > -34.79
+  );
+
+  // Otimização de Performance Extrema: agrupamos os dados temporais, ordenamos uma única vez e pegamos apenas os 5 mais recentes para o preview.
+  const previewDataPorReq = useMemo(() => {
+    const map: Record<number, { date: string, val: number }[]> = {};
+    const groups: Record<number, DadoTemporal[]> = {};
+
+    dadosTemporais.forEach(d => {
+      if (d.idReqApi && d.tipoApiNome === tipoApiNome) {
+        if (!groups[d.idReqApi]) groups[d.idReqApi] = [];
+        groups[d.idReqApi].push(d);
+      }
     });
-    
-    return {
-      idReq: dataFiltrada[0].idReqApi || (tipoApiNome === 'SATVEG' ? 1 : 2),
-      dados: dadosObj
-    };
+
+    for (const reqId in groups) {
+      const top5 = groups[reqId]
+        .sort((a, b) => a.dataLeitura > b.dataLeitura ? -1 : (a.dataLeitura < b.dataLeitura ? 1 : 0))
+        .slice(0, 5)
+        .map(d => ({ date: d.dataLeitura, val: d.valor }));
+      map[reqId] = top5;
+    }
+
+    return map;
   }, [dadosTemporais, tipoApiNome]);
+
+  const reqApisFiltradas = useMemo(() =>
+    reqApis.filter(r => r.tipoApiNome === tipoApiNome)
+      .sort((a, b) => new Date(b.dataAnalise).getTime() - new Date(a.dataAnalise).getTime()),
+    [reqApis, tipoApiNome]
+  );
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
       <View style={styles.infoCard}>
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardDescription}>{description}</Text>
-        
+
         {selectedTalhao && (
           <View style={styles.gpsBadge}>
             <FontAwesome5 name="map-marker-alt" size={11} color={Colors.accent} />
@@ -77,34 +86,52 @@ export function AnalisePanel({
         )}
 
         <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: buttonColor }]}
-          onPress={onRunApi}
-          activeOpacity={0.85}
+          style={[styles.actionBtn, { backgroundColor: outOfBrazil ? Colors.bgInput : buttonColor }]}
+          onPress={outOfBrazil ? undefined : onRunApi}
+          disabled={!!outOfBrazil}
+          activeOpacity={outOfBrazil ? 1 : 0.85}
         >
-          <FontAwesome5 name={buttonIcon} size={14} color={buttonTextColor} />
-          <Text style={[styles.actionBtnText, { color: buttonTextColor }]}>{buttonText}</Text>
+          <FontAwesome5 name={outOfBrazil ? 'ban' : buttonIcon} size={14} color={outOfBrazil ? Colors.textMuted : buttonTextColor} />
+          <Text style={[styles.actionBtnText, { color: outOfBrazil ? Colors.textMuted : buttonTextColor }]}>
+            {outOfBrazil ? 'Indisponível fora do Brasil' : buttonText}
+          </Text>
         </TouchableOpacity>
+
+        {outOfBrazil && (
+          <ValidationError message="O SATVEG (Embrapa) não possui cobertura de NDVI fora do território brasileiro." />
+        )}
       </View>
 
       <Text style={styles.sectionHeading}>{sectionHeading}</Text>
-      
-      {!dadosAgregados ? (
+
+      {reqApisFiltradas.length === 0 ? (
         <Text style={styles.noHistoryText}>{emptyMessage}</Text>
       ) : (
-        <TelemetriaHistoryCard
-          id={dadosAgregados.idReq}
-          type={type}
-          title="Série Histórica Consolidada"
-          subtitle={subtitleGrafico}
-          dados={dadosAgregados.dados}
-          onPressViewAll={() => navigation.navigate('AnaliseDetalhes', {
-            type,
-            id: dadosAgregados.idReq,
-            title: "Série Histórica Consolidada",
-            subtitle: subtitleGrafico,
-            dados: dadosAgregados.dados
+        <>
+          <Text style={[styles.sectionHeading, { fontSize: 12, color: Colors.textSecondary, marginBottom: 8 }]}>
+            Histórico de Requisições:
+          </Text>
+          {reqApisFiltradas.map(req => {
+            const previewData = previewDataPorReq[req.id] || [];
+            return (
+              <TelemetriaHistoryCard
+                key={req.id}
+                id={req.id}
+                type={type}
+                title={`Série Consolidada (Req #${req.id})`}
+                subtitle={`Gerada em: ${new Date(req.dataAnalise).toLocaleString('pt-BR')}`}
+                previewData={previewData}
+                onDelete={() => onDeleteAnalysis?.(req.id)}
+                onPressViewAll={() => navigation.navigate('AnaliseDetalhes', {
+                  type,
+                  id: req.id,
+                  title: `Série Consolidada (Req #${req.id})`,
+                  subtitle: subtitleGrafico
+                })}
+              />
+            );
           })}
-        />
+        </>
       )}
     </ScrollView>
   );

@@ -2,22 +2,39 @@
 // Terra Nova — Componente de Erro de Validação Inline
 // ═══════════════════════════════════════════════════════════════
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 
 interface ValidationErrorProps {
   message: string;
+  onClear?: () => void;
+  timeout?: number;
 }
 
-export function ValidationError({ message }: ValidationErrorProps) {
+export function ValidationError({ message, onClear, timeout = 5000 }: ValidationErrorProps) {
+  // Efeito para auto-expirar o erro após os segundos definidos
+  useEffect(() => {
+    if (message && onClear) {
+      const timer = setTimeout(() => {
+        onClear();
+      }, timeout);
+      return () => clearTimeout(timer);
+    }
+  }, [message, onClear, timeout]);
+
   if (!message) return null;
 
   return (
     <View style={styles.container}>
       <FontAwesome5 name="exclamation-triangle" size={13} color={Colors.danger} />
       <Text style={styles.text}>{message}</Text>
+      {onClear && (
+        <TouchableOpacity onPress={onClear} hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+          <FontAwesome5 name="times" size={14} color={Colors.danger} style={{ opacity: 0.7 }} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
