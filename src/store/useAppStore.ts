@@ -13,6 +13,11 @@ const now = () => new Date().toISOString();
 // Controle global de concorrência para evitar requisições duplicadas simultâneas
 let activeFetchPromise: Promise<void> | null = null;
 const activeTelemetryPromises: Record<number, Promise<void> | undefined> = {};
+const INITIAL_SYNC_COOLDOWN_MS = 45_000;
+const INITIAL_SYNC_ERROR_COOLDOWN_MS = 120_000;
+const silentRequestOptions = { suppressErrorAlert: true };
+let lastSuccessfulInitialSyncAt = 0;
+let lastFailedInitialSyncAt = 0;
 
 // Helper global para registrar erros de API no console sem duplicar os alertas exibidos pelo interceptor do Axios
 const handleApiError = (error: any, defaultMsg: string) => {
@@ -101,6 +106,15 @@ export const useAppStore = create<AppStore>()(
           return activeFetchPromise;
         }
 
+        const nowMs = Date.now();
+        if (silent) {
+          const syncedRecently = nowMs - lastSuccessfulInitialSyncAt < INITIAL_SYNC_COOLDOWN_MS;
+          const failedRecently = nowMs - lastFailedInitialSyncAt < INITIAL_SYNC_ERROR_COOLDOWN_MS;
+          if (syncedRecently || failedRecently) {
+            return;
+          }
+        }
+
         activeFetchPromise = (async () => {
           if (!silent) set({ isLoading: true });
           try {
@@ -111,10 +125,11 @@ export const useAppStore = create<AppStore>()(
             }
 
             // Busca os recursos rápidos e essenciais do usuário
+            const requestOptions = silent ? silentRequestOptions : undefined;
             const [propriedades, talhoes, alertas] = await Promise.all([
-              apiService.getPropriedadesDoProdutor(user.id),
-              apiService.getTalhoesDoProdutor(user.id),
-              apiService.getAlertasDoProdutor(user.id)
+              apiService.getPropriedadesDoProdutor(user.id, requestOptions),
+              apiService.getTalhoesDoProdutor(user.id, requestOptions),
+              apiService.getAlertasDoProdutor(user.id, requestOptions)
             ]);
 
             set({ propriedades, talhoes, alertas });
@@ -122,9 +137,9 @@ export const useAppStore = create<AppStore>()(
             // Lazy Loading (Cache Inteligente): Carrega tabelas ausentes em paralelo
             const state = get();
             const cacheDependencies = [
-              { key: 'tiposPlantacao' as const, fetcher: apiService.getTiposPlantacao },
-              { key: 'localizacoes' as const, fetcher: apiService.getLocalizacoes },
-              { key: 'telefones' as const, fetcher: apiService.getTelefones }
+              { key: 'tiposPlantacao' as const, fetcher: () => apiService.getTiposPlantacao(requestOptions) },
+              { key: 'localizacoes' as const, fetcher: () => apiService.getLocalizacoes(requestOptions) },
+              { key: 'telefones' as const, fetcher: () => apiService.getTelefones(requestOptions) }
             ];
 
             await Promise.all(
@@ -132,7 +147,14 @@ export const useAppStore = create<AppStore>()(
                 .filter(({ key }) => state[key].length === 0)
                 .map(({ key, fetcher }) => fetcher().then(data => set({ [key]: data } as Partial<AppStore>)))
             );
+            lastSuccessfulInitialSyncAt = Date.now();
+            lastFailedInitialSyncAt = 0;
           } catch (error) {
+            if (silent) {
+              lastFailedInitialSyncAt = Date.now();
+              console.warn("Sincronizacao silenciosa dos dados iniciais falhou:", error instanceof Error ? error.message : error);
+              return;
+            }
             console.error("Erro ao buscar dados iniciais:", error);
             throw error;
           } finally {
@@ -494,9 +516,10 @@ export const useAppStore = create<AppStore>()(
         activeTelemetryPromises[idTalhao] = (async () => {
           if (!silent) set({ isLoading: true });
           try {
+            const requestOptions = silent ? silentRequestOptions : undefined;
             const [dados, reqs] = await Promise.all([
-              apiService.getDadosTemporais(idTalhao),
-              apiService.getReqApisByTalhao(idTalhao)
+              apiService.getDadosTemporais(idTalhao, requestOptions),
+              apiService.getReqApisByTalhao(idTalhao, requestOptions)
             ]);
             const reqsWithTalhao = reqs.map(r => ({ ...r, idTalhao }));
             set(state => ({
@@ -504,7 +527,9 @@ export const useAppStore = create<AppStore>()(
               reqApis: [...state.reqApis.filter(r => r.idTalhao !== idTalhao), ...reqsWithTalhao]
             }));
           } catch (error: any) {
-            console.warn("Fetch Dados Temporais error:", error.message);
+            if (!silent) {
+              console.warn("Fetch Dados Temporais error:", error.message);
+            }
           } finally {
             if (!silent) set({ isLoading: false });
           }

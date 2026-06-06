@@ -11,5 +11,5 @@ export function useScreenSync() {
     await useAppStore.getState().fetchInitialData(true).catch(() => {});
   }, []);
 
-  useFocusPolling(syncData);
+  useFocusPolling(syncData, 60_000);
 }

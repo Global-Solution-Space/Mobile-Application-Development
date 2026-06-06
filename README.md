@@ -298,20 +298,15 @@ O aplicativo Mobile se comunica com o backend Java Spring Boot.
 
 Para que o celular físico consiga se conectar com o servidor da API rodando no seu computador:
 
-1. Obtenha o seu **IP de rede local** (no Windows, execute `ipconfig` no prompt de comando. Exemplo: `192.168.1.7`).
-2. Abra o arquivo `src/services/api.ts` e confira a constante `baseURL`. No código atual ela está configurada para `http://192.168.1.7:8080/api`; ajuste para o IP da sua máquina ou para `localhost` caso esteja usando emulador com acesso local adequado:
-   ```typescript
-   baseURL: 'http://SEU_IP_LOCAL:8080/api'
-   ```
-3. Abra um terminal na pasta root do projeto mobile:
+1. Abra um terminal na pasta root do projeto mobile:
    ```bash
    cd Mobile-Application-Development
    ```
-4. Instale as dependências:
+2. Instale as dependências:
    ```bash
    npm install
    ```
-5. Inicie o servidor do Expo conforme o script do projeto:
+3. Inicie o servidor do Expo conforme o script do projeto:
    ```bash
    npm run start
    ```
@@ -319,4 +314,4 @@ Para que o celular físico consiga se conectar com o servidor da API rodando no 
    ```bash
    npx expo start -c
    ```
-6. Escaneie o QR Code exibido no terminal com a câmera do seu celular físico (iOS) ou com o aplicativo **Expo Go** (Android).
+4. Escaneie o QR Code exibido no terminal com a câmera do seu celular físico (iOS) ou com o aplicativo **Expo Go** (Android).

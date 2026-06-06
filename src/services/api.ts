@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type AxiosRequestConfig } from 'axios';
 import { Alert } from 'react-native';
 import { 
   Produtor, Telefone, Localizacao, Propriedade, TipoPlantacao, 
@@ -11,8 +11,21 @@ import {
   AlertaAgricolaResponseSchema, DadoTemporalResponseSchema, ReqApiResponseSchema
 } from '../schemas';
 
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    suppressErrorAlert?: boolean;
+  }
+}
+type ApiRequestOptions = {
+  suppressErrorAlert?: boolean;
+};
+
+const toRequestConfig = (options?: ApiRequestOptions): AxiosRequestConfig => ({
+  suppressErrorAlert: options?.suppressErrorAlert,
+});
+
 const api = axios.create({
-  baseURL: 'http://192.168.1.7:8080/api',
+  baseURL: 'https://java-advanced-production.up.railway.app/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -27,6 +40,10 @@ interface ValidationErrorItem {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.config?.suppressErrorAlert) {
+      return Promise.reject(error);
+    }
+
     let msg = 'Ocorreu um erro de conexão com o servidor.';
     if (error.response) {
       if (error.response.status === 400) msg = 'Dados inválidos. Verifique as informações.';
@@ -71,8 +88,8 @@ const extractAndValidate = <T>(data: any, schema: z.ZodType<T>): T[] => {
 
 export const apiService = {
   // ── Produtores ──
-  getProdutores: async () => {
-    const res = await api.get('/produtores');
+  getProdutores: async (options?: ApiRequestOptions) => {
+    const res = await api.get('/produtores', toRequestConfig(options));
     return extractAndValidate<Produtor>(res.data, ProdutorResponseSchema);
   },
   createProdutor: async (data: Omit<Produtor, 'id' | '_links'> & { telefone?: { ddd: string; numero: string } }) => {
@@ -85,8 +102,8 @@ export const apiService = {
   },
 
   // ── Telefones ──
-  getTelefones: async () => {
-    const res = await api.get('/telefones');
+  getTelefones: async (options?: ApiRequestOptions) => {
+    const res = await api.get('/telefones', toRequestConfig(options));
     return extractAndValidate<Telefone>(res.data, TelefoneResponseSchema);
   },
   createTelefone: async (data: Omit<Telefone, 'id' | '_links'>) => {
@@ -99,8 +116,8 @@ export const apiService = {
   },
 
   // ── Localizacoes ──
-  getLocalizacoes: async () => {
-    const res = await api.get('/localizacoes');
+  getLocalizacoes: async (options?: ApiRequestOptions) => {
+    const res = await api.get('/localizacoes', toRequestConfig(options));
     return extractAndValidate<Localizacao>(res.data, LocalizacaoResponseSchema);
   },
   createLocalizacao: async (data: Omit<Localizacao, 'id' | '_links'>) => {
@@ -109,12 +126,12 @@ export const apiService = {
   },
 
   // ── Propriedades ──
-  getPropriedades: async () => {
-    const res = await api.get('/propriedades');
+  getPropriedades: async (options?: ApiRequestOptions) => {
+    const res = await api.get('/propriedades', toRequestConfig(options));
     return extractAndValidate<Propriedade>(res.data, PropriedadeResponseSchema);
   },
-  getPropriedadesDoProdutor: async (idProdutor: number) => {
-    const res = await api.get(`/propriedades/produtor/${idProdutor}`);
+  getPropriedadesDoProdutor: async (idProdutor: number, options?: ApiRequestOptions) => {
+    const res = await api.get(`/propriedades/produtor/${idProdutor}`, toRequestConfig(options));
     return extractAndValidate<Propriedade>(res.data, PropriedadeResponseSchema);
   },
   createPropriedade: async (data: Omit<Propriedade, 'id' | '_links'>) => {
@@ -130,8 +147,8 @@ export const apiService = {
   },
 
   // ── Tipos de Plantacao ──
-  getTiposPlantacao: async () => {
-    const res = await api.get('/tipos-plantacao');
+  getTiposPlantacao: async (options?: ApiRequestOptions) => {
+    const res = await api.get('/tipos-plantacao', toRequestConfig(options));
     return extractAndValidate<TipoPlantacao>(res.data, TipoPlantacaoResponseSchema);
   },
   createTipoPlantacao: async (data: Omit<TipoPlantacao, 'id' | '_links'>) => {
@@ -140,12 +157,12 @@ export const apiService = {
   },
 
   // ── Talhoes ──
-  getTalhoes: async () => {
-    const res = await api.get('/talhoes');
+  getTalhoes: async (options?: ApiRequestOptions) => {
+    const res = await api.get('/talhoes', toRequestConfig(options));
     return extractAndValidate<Talhao>(res.data, TalhaoResponseSchema);
   },
-  getTalhoesDoProdutor: async (idProdutor: number) => {
-    const res = await api.get(`/talhoes/produtor/${idProdutor}`);
+  getTalhoesDoProdutor: async (idProdutor: number, options?: ApiRequestOptions) => {
+    const res = await api.get(`/talhoes/produtor/${idProdutor}`, toRequestConfig(options));
     return extractAndValidate<Talhao>(res.data, TalhaoResponseSchema);
   },
   createTalhao: async (data: Omit<Talhao, 'id' | '_links'>) => {
@@ -165,8 +182,8 @@ export const apiService = {
     const res = await api.post<ReqApi>('/req-api', data);
     return res.data;
   },
-  getReqApisByTalhao: async (idTalhao: number) => {
-    const res = await api.get(`/req-api/talhao/${idTalhao}`);
+  getReqApisByTalhao: async (idTalhao: number, options?: ApiRequestOptions) => {
+    const res = await api.get(`/req-api/talhao/${idTalhao}`, toRequestConfig(options));
     return extractAndValidate<ReqApi>(res.data, ReqApiResponseSchema);
   },
   deleteReqApi: async (id: number) => {
@@ -174,18 +191,18 @@ export const apiService = {
   },
 
   // ── Dados Temporais (Resultados das APIs unificados) ──
-  getDadosTemporais: async (idTalhao: number) => {
-    const res = await api.get(`/dados-temporais/talhao/${idTalhao}`);
+  getDadosTemporais: async (idTalhao: number, options?: ApiRequestOptions) => {
+    const res = await api.get(`/dados-temporais/talhao/${idTalhao}`, toRequestConfig(options));
     return extractAndValidate<DadoTemporal>(res.data, DadoTemporalResponseSchema);
   },
 
   // ── Alertas Agricolas ──
-  getAlertas: async () => {
-    const res = await api.get('/alertas');
+  getAlertas: async (options?: ApiRequestOptions) => {
+    const res = await api.get('/alertas', toRequestConfig(options));
     return extractAndValidate<AlertaAgricola>(res.data, AlertaAgricolaResponseSchema);
   },
-  getAlertasDoProdutor: async (idProdutor: number) => {
-    const res = await api.get(`/alertas/produtor/${idProdutor}`);
+  getAlertasDoProdutor: async (idProdutor: number, options?: ApiRequestOptions) => {
+    const res = await api.get(`/alertas/produtor/${idProdutor}`, toRequestConfig(options));
     return extractAndValidate<AlertaAgricola>(res.data, AlertaAgricolaResponseSchema);
   },
   createAlerta: async (data: Omit<AlertaAgricola, 'id' | '_links' | 'dataAlerta'>) => {
