@@ -112,7 +112,7 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
                 value={telefone}
                 onChangeText={setTelefone}
                 keyboardType="numeric"
-                maxLength={10}
+                maxLength={9}
               />
             </View>
           </View>

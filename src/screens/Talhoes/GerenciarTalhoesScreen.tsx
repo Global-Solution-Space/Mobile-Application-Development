@@ -10,10 +10,11 @@ import { Colors } from '../../theme/colors';
 import { Header } from '../../components/Header';
 import { SelectChip } from '../../components/SelectChip';
 import { ModalTipoPlantacao } from '../../components/Modals/ModalTipoPlantacao';
+import { ModalPropriedade } from '../../components/Modals/ModalPropriedade';
 import { useAppStore } from '../../store/useAppStore';
 import { TalhaoSchema } from '../../schemas';
 import { ValidationError } from '../../components/ValidationError';
-import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
 import { validarCoordenadasNoBrasil } from '../../utils/geolocation';
 
@@ -32,6 +33,7 @@ export function GerenciarTalhoesScreen({ navigation, route }: Props) {
   const [erro, setErro] = useState('');
 
   const [modalTipo, setModalTipo] = useState(false);
+  const [modalPropriedade, setModalPropriedade] = useState(false);
 
   useEffect(() => {
     if (editId) {
@@ -174,7 +176,12 @@ export function GerenciarTalhoesScreen({ navigation, route }: Props) {
               )}
             </ScrollView>
 
-            <Text style={[styles.label, { marginTop: 16, marginBottom: 8 }]}>Propriedade *</Text>
+            <View style={[styles.labelRow, { marginTop: 16 }]}>
+              <Text style={styles.label}>Propriedade *</Text>
+              <TouchableOpacity onPress={() => setModalPropriedade(true)}>
+                <Text style={styles.addLink}>+ Nova</Text>
+              </TouchableOpacity>
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
               {propriedades.map(p => (
                 <SelectChip
@@ -243,6 +250,7 @@ export function GerenciarTalhoesScreen({ navigation, route }: Props) {
       </KeyboardAvoidingView>
 
       <ModalTipoPlantacao visible={modalTipo} onClose={() => setModalTipo(false)} />
+      <ModalPropriedade visible={modalPropriedade} onClose={() => setModalPropriedade(false)} />
 
     </View>
   );

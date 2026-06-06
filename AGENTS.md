@@ -55,7 +55,7 @@ Componentes visuais limpos e componentizados. **Sempre prefira usá-los ao invé
 1. **Autenticação de Produtor:** Login e Registro (Auth condicional no `MainStack`).
 2. **Dashboard (Home):** Exibição de KPIs e botão de simulação de "Eventos Críticos" que puxa alertas de satélite simulados.
 3. **Gestão de Talhões:** CRUD completo integrado à API + Filtros avançados de status e área.
-4. **Monitoramento de Propriedades:** Lista de Propriedades cadastradas, com barra de capacidade e lotes internos mapeados.
+4. **Monitoramento de Propriedades:** Lista de Propriedades cadastradas, com barra de capacidade e Talhões internos mapeados.
 5. **Criação Expressa em Cascata:** No cadastro de Talhões, caso o produtor não tenha Propriedades ou Tipos de Plantação, ele pode criá-los na hora através de Modais sem sair da tela.
 
 ---

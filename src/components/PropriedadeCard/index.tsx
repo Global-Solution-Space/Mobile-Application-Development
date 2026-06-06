@@ -35,7 +35,7 @@ export function PropriedadeCard({ nome, tamanhoTotal, ativos, cap, children }: P
       <View style={styles.barContainer}>
         <View style={styles.barLabel}>
           <Text style={styles.barLabelText}>Ocupação</Text>
-          <Text style={styles.barLabelValue}>{ativos}/{cap} Talhões</Text>
+          <Text style={styles.barLabelValue}>{ativos}/{cap} ha</Text>
         </View>
         <View style={styles.barTrack}>
           <View style={[styles.barFill, {

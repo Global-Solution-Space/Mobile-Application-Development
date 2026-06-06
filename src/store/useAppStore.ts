@@ -44,7 +44,7 @@ export interface AppStore {
   login: (email: string, senha?: string) => Promise<{ success: boolean; errorType?: 'auth' | 'network' }>;
   register: (nome: string, email: string, senha?: string, ddd?: string, numeroTelefone?: string) => Promise<{ success: boolean; errorType?: 'exists' | 'network' }>;
   logout: () => void;
-  updateProfile: (updates: Partial<Produtor>, telefoneUpdates?: Partial<Telefone>) => Promise<void>;
+  updateProfile: (updates: Partial<Produtor>, telefoneUpdates?: Partial<Telefone>) => Promise<boolean>;
 
   // Data Actions
   addLog: (tipo: TipoLog, mensagem: string) => void;
@@ -177,11 +177,23 @@ export const useAppStore = create<AppStore>()(
         set({ isLoading: true });
         try {
           const payload: Parameters<typeof apiService.createProdutor>[0] = { nome, email, senha };
-          if (ddd && numeroTelefone) {
-            payload.telefone = { ddd, numero: numeroTelefone };
-          }
-
+          
           const novoProdutor = await apiService.createProdutor(payload);
+
+          // Se houver DDD e telefone, cria separadamente via endpoint /telefones
+          if (ddd && numeroTelefone) {
+            try {
+              const novoTelefone = await apiService.createTelefone({
+                ddd,
+                numero: numeroTelefone,
+                idProdutor: novoProdutor.id,
+              });
+              set(s => ({ telefones: [...s.telefones, novoTelefone] }));
+            } catch (telError) {
+              console.warn("Erro ao criar telefone do novo produtor:", telError);
+              // Não falha o registro por causa do telefone
+            }
+          }
 
           set(s => ({
             produtores: [...s.produtores, novoProdutor],
@@ -213,21 +225,35 @@ export const useAppStore = create<AppStore>()(
         set({ isLoading: true });
         try {
           const user = get().currentUser;
-          if (!user) return;
-          
-          const updatedProdutor = await apiService.updateProdutor(user.id, updates);
+          const fallbackUser = get().produtores.find((p) => p.id === user?.id || p.email === user?.email);
+          const userId = fallbackUser?.id ?? user?.id;
+
+          if (!userId) {
+            set({ isLoading: false });
+            return false;
+          }
+
+          const payload: Partial<Produtor> = {
+            nome: updates.nome ?? user?.nome ?? fallbackUser?.nome ?? '',
+            email: updates.email ?? user?.email ?? fallbackUser?.email ?? '',
+            senha: updates.senha ?? user?.senha ?? fallbackUser?.senha,
+          };
+
+          const updatedProdutor = await apiService.updateProdutor(userId, payload);
           
           if (telefoneUpdates) {
-             const telefone = get().telefones.find(t => t.idProdutor === user.id);
+             const telefonePayload = {
+               ddd: telefoneUpdates.ddd ?? '',
+               numero: telefoneUpdates.numero ?? '',
+               idProdutor: userId,
+             };
+
+             const telefone = get().telefones.find(t => t.idProdutor === userId);
              if (telefone) {
-                const updatedTel = await apiService.updateTelefone(telefone.id, telefoneUpdates);
+                const updatedTel = await apiService.updateTelefone(telefone.id, telefonePayload);
                 set(s => ({ telefones: s.telefones.map(t => t.id === telefone.id ? updatedTel : t) }));
-             } else if (telefoneUpdates.ddd && telefoneUpdates.numero) {
-                const newTel = await apiService.createTelefone({
-                   ddd: telefoneUpdates.ddd,
-                   numero: telefoneUpdates.numero,
-                   idProdutor: user.id
-                });
+             } else if (telefonePayload.ddd && telefonePayload.numero) {
+                const newTel = await apiService.createTelefone(telefonePayload);
                 set(s => ({ telefones: [...s.telefones, newTel] }));
              }
           }
@@ -237,8 +263,10 @@ export const useAppStore = create<AppStore>()(
             produtores: s.produtores.map(p => p.id === updatedProdutor.id ? updatedProdutor : p)
           }));
           get().addLog('edicao', `Produtor atualizou seu perfil`);
+          return true;
         } catch (error: any) {
-          console.warn("Update profile error:", error.message);
+          console.warn('Update profile error:', error.message);
+          return false;
         } finally {
           set({ isLoading: false });
         }

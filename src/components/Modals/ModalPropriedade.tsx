@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { useAppStore } from '../../store/useAppStore';
 import { PropriedadeSchema } from '../../schemas';
 import { ValidationError } from '../../components/ValidationError';
+import { validarCoordenadasNoBrasil } from '../../utils/geolocation';
 
 interface ModalPropriedadeProps {
   visible: boolean;
@@ -39,6 +40,12 @@ export function ModalPropriedade({ visible, onClose }: ModalPropriedadeProps) {
     }
 
     const { nome, tamanhoTotal, locLatitude, locLongitude } = validation.data;
+
+    const geoValidation = await validarCoordenadasNoBrasil(locLatitude, locLongitude);
+    if (!geoValidation.isValid) {
+      setErro(geoValidation.message!);
+      return;
+    }
 
     let locId = localizacoes.find(l => l.locLatitude === locLatitude && l.locLongitude === locLongitude)?.id;
     if (!locId) {

@@ -111,7 +111,7 @@ export function CriarAlertaScreen({ navigation, route }: CriarAlertaScreenProps)
                 iconName="exclamation-triangle"
                 value={titulo}
                 onChangeText={setTitulo}
-                placeholder="Ex: Praga Detectada, Falha de Irrigação"
+                placeholder="Ex: Praga Detectada, Baixa Fertilidade"
               />
 
               <FormInput

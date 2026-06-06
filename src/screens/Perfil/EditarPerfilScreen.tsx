@@ -28,7 +28,7 @@ export function EditarPerfilScreen() {
   const emailValido = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   const senhasIguais = novaSenha.length > 0 && novaSenha === confirmarSenha;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setErro('');
 
     if (!nome.trim()) {
@@ -57,9 +57,13 @@ export function EditarPerfilScreen() {
       numero: telefone.trim(),
     };
 
-    updateProfile(updates, telefoneUpdates);
+    const success = await updateProfile(updates, telefoneUpdates);
 
-    navigation.goBack();
+    if (success) {
+      navigation.goBack();
+    } else {
+      setErro('Não foi possível atualizar o perfil. Verifique sua conexão e tente novamente.');
+    }
   };
 
   return (
@@ -116,7 +120,7 @@ export function EditarPerfilScreen() {
                   onChangeText={setTelefone}
                   placeholder="Ex: 999999999"
                   keyboardType="numeric"
-                  maxLength={10}
+                  maxLength={9}
                 />
               </View>
             </View>
