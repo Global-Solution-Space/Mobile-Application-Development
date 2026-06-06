@@ -8,6 +8,12 @@ import { FormInput } from '../../components/FormInput';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { ValidationError } from '../../components/ValidationError';
 import { useAppStore } from '../../store/useAppStore';
+import { EditarPerfilSchema } from '../../schemas';
+
+type PerfilFormField = 'nome' | 'ddd' | 'telefone' | 'novoEmail' | 'novaSenha' | 'confirmarSenha';
+type PerfilFormErrors = Partial<Record<PerfilFormField, string>>;
+
+const perfilFormFields: PerfilFormField[] = ['nome', 'ddd', 'telefone', 'novoEmail', 'novaSenha', 'confirmarSenha'];
 
 export function EditarPerfilScreen() {
   const navigation = useNavigation();
@@ -24,37 +30,73 @@ export function EditarPerfilScreen() {
   const [showNovaSenha, setShowNovaSenha]   = useState(false);
   const [showConfirmar, setShowConfirmar]   = useState(false);
   const [erro, setErro]                     = useState('');
+  const [errors, setErrors]                 = useState<PerfilFormErrors>({});
 
   const emailValido = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   const senhasIguais = novaSenha.length > 0 && novaSenha === confirmarSenha;
 
+  const clearFieldError = (field: PerfilFormField) => {
+    setErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+    if (erro) setErro('');
+  };
+
+  const sanitizeDigits = (value: string) => value.replace(/\D/g, '');
+
+  const setValidationErrors = (issues: Array<{ path: PropertyKey[]; message: string }>) => {
+    const nextErrors: PerfilFormErrors = {};
+    let fallbackMessage = '';
+
+    issues.forEach((issue) => {
+      const field = issue.path[0] as PerfilFormField | undefined;
+      if (field && perfilFormFields.includes(field) && !nextErrors[field]) {
+        nextErrors[field] = issue.message;
+      } else if (!fallbackMessage) {
+        fallbackMessage = issue.message;
+      }
+    });
+
+    setErrors(nextErrors);
+    setErro(Object.keys(nextErrors).length > 0 ? '' : fallbackMessage || 'Revise os campos destacados.');
+  };
+
   const handleSave = async () => {
     setErro('');
+    setErrors({});
 
-    if (!nome.trim()) {
-      setErro('O nome não pode ficar vazio.');
-      return;
-    }
-    if (novoEmail && !emailValido(novoEmail)) {
-      setErro('Digite um e-mail válido.');
-      return;
-    }
-    if (novaSenha && novaSenha.length < 6) {
-      setErro('A nova senha precisa ter pelo menos 6 caracteres.');
-      return;
-    }
-    if (novaSenha && novaSenha !== confirmarSenha) {
-      setErro('As senhas não coincidem.');
+    const validation = EditarPerfilSchema.safeParse({
+      nome,
+      ddd,
+      telefone,
+      novoEmail,
+      novaSenha,
+      confirmarSenha,
+    });
+
+    if (!validation.success) {
+      setValidationErrors(validation.error.issues);
       return;
     }
 
-    const updates: Record<string, string> = { nome };
-    if (novoEmail) updates.email = novoEmail;
-    if (novaSenha && senhasIguais) updates.senha = novaSenha;
+    const {
+      nome: nomeValid,
+      ddd: dddValid,
+      telefone: telefoneValid,
+      novoEmail: novoEmailValid,
+      novaSenha: novaSenhaValid,
+    } = validation.data;
+
+    const updates: Record<string, string> = { nome: nomeValid };
+    if (novoEmailValid) updates.email = novoEmailValid;
+    if (novaSenhaValid) updates.senha = novaSenhaValid;
 
     const telefoneUpdates = {
-      ddd: ddd.trim(),
-      numero: telefone.trim(),
+      ddd: dddValid,
+      numero: telefoneValid,
     };
 
     const success = await updateProfile(updates, telefoneUpdates);
@@ -62,7 +104,7 @@ export function EditarPerfilScreen() {
     if (success) {
       navigation.goBack();
     } else {
-      setErro('Não foi possível atualizar o perfil. Verifique sua conexão e tente novamente.');
+      setErro('Não foi possível atualizar o perfil. Verifique os Dados e tente novamente.');
     }
   };
 
@@ -97,8 +139,12 @@ export function EditarPerfilScreen() {
               label="Nome de exibição"
               iconName="user"
               value={nome}
-              onChangeText={setNome}
+              onChangeText={(value) => {
+                setNome(value);
+                clearFieldError('nome');
+              }}
               placeholder="Seu nome"
+              error={errors.nome}
             />
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -106,10 +152,15 @@ export function EditarPerfilScreen() {
                 <FormInput
                   label="DDD"
                   value={ddd}
-                  onChangeText={setDdd}
+                  onChangeText={(value) => {
+                    setDdd(sanitizeDigits(value));
+                    clearFieldError('ddd');
+                    clearFieldError('telefone');
+                  }}
                   placeholder="Ex: 11"
                   keyboardType="numeric"
                   maxLength={2}
+                  error={errors.ddd}
                 />
               </View>
               <View style={{ flex: 0.7 }}>
@@ -117,10 +168,14 @@ export function EditarPerfilScreen() {
                   label="Telefone"
                   iconName="phone"
                   value={telefone}
-                  onChangeText={setTelefone}
+                  onChangeText={(value) => {
+                    setTelefone(sanitizeDigits(value));
+                    clearFieldError('telefone');
+                  }}
                   placeholder="Ex: 999999999"
                   keyboardType="numeric"
                   maxLength={9}
+                  error={errors.telefone}
                 />
               </View>
             </View>
@@ -146,15 +201,19 @@ export function EditarPerfilScreen() {
               label="Novo e-mail (opcional)"
               iconName="envelope"
               value={novoEmail}
-              onChangeText={setNovoEmail}
+              onChangeText={(value) => {
+                setNovoEmail(value);
+                clearFieldError('novoEmail');
+              }}
               placeholder="Digite o novo e-mail"
               keyboardType="email-address"
               autoCapitalize="none"
+              error={errors.novoEmail}
             />
-            {novoEmail.length > 0 && !emailValido(novoEmail) && (
+            {!errors.novoEmail && novoEmail.length > 0 && !emailValido(novoEmail) && (
               <Text style={styles.hintError}>E-mail inválido</Text>
             )}
-            {novoEmail.length > 0 && emailValido(novoEmail) && (
+            {!errors.novoEmail && novoEmail.length > 0 && emailValido(novoEmail) && (
               <Text style={styles.hintOk}>E-mail válido ✓</Text>
             )}
 
@@ -163,11 +222,16 @@ export function EditarPerfilScreen() {
               label="Nova senha (opcional)"
               iconName="lock"
               value={novaSenha}
-              onChangeText={setNovaSenha}
+              onChangeText={(value) => {
+                setNovaSenha(value);
+                clearFieldError('novaSenha');
+                clearFieldError('confirmarSenha');
+              }}
               placeholder="Deixe em branco para não alterar"
               secureTextEntry={!showNovaSenha}
               rightIcon={showNovaSenha ? 'eye-slash' : 'eye'}
               onRightIconPress={() => setShowNovaSenha(v => !v)}
+              error={errors.novaSenha}
             />
 
             {/* confirmar senha */}
@@ -175,13 +239,17 @@ export function EditarPerfilScreen() {
               label="Confirmar nova senha"
               iconName="shield-alt"
               value={confirmarSenha}
-              onChangeText={setConfirmarSenha}
+              onChangeText={(value) => {
+                setConfirmarSenha(value);
+                clearFieldError('confirmarSenha');
+              }}
               placeholder="Repita a nova senha"
               secureTextEntry={!showConfirmar}
               rightIcon={showConfirmar ? 'eye-slash' : 'eye'}
               onRightIconPress={() => setShowConfirmar(v => !v)}
+              error={errors.confirmarSenha}
             />
-            {confirmarSenha.length > 0 && (
+            {!errors.confirmarSenha && confirmarSenha.length > 0 && (
               <Text style={senhasIguais ? styles.hintOk : styles.hintError}>
                 {senhasIguais ? 'Senhas coincidem ✓' : 'Senhas não coincidem'}
               </Text>

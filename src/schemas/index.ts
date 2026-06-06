@@ -18,6 +18,30 @@ export const RegisterSchema = z.object({
   path: ['confirmarSenha'],
 });
 
+export const EditarPerfilSchema = z.object({
+  nome: z.string().trim().min(3, { error: 'O nome deve ter no mínimo 3 caracteres' }).max(30, { error: 'O nome deve ter no máximo 30 caracteres' }),
+  ddd: z.string().trim().refine((value) => value.length === 0 || /^\d{2}$/.test(value), { error: 'Informe um DDD com 2 dígitos', }),
+  telefone: z.string().trim().refine((value) => value.length === 0 || /^\d{8,9}$/.test(value), { error: 'O telefone deve ter 8 ou 9 dígitos', }),
+  novoEmail: z.string().trim().max(30, { error: 'O e-mail deve ter no máximo 30 caracteres' }).refine(
+    (value) => value.length === 0 || z.email().safeParse(value).success,
+    { error: 'Formato de e-mail inválido' }
+  ),
+  novaSenha: z.string().max(30, { error: 'A senha deve ter no máximo 30 caracteres' }).refine(
+    (value) => value.length === 0 || value.length >= 6,
+    { error: 'A nova senha deve ter pelo menos 6 caracteres' }
+  ),
+  confirmarSenha: z.string(),
+}).refine((data) => (!data.ddd && !data.telefone) || (data.ddd && data.telefone), {
+  error: 'Preencha DDD e telefone juntos',
+  path: ['telefone'],
+}).refine((data) => data.novaSenha.length === 0 || data.confirmarSenha.length > 0, {
+  error: 'Confirme a nova senha',
+  path: ['confirmarSenha'],
+}).refine((data) => data.novaSenha.length === 0 || data.novaSenha === data.confirmarSenha, {
+  error: 'As senhas não coincidem. Verifique e tente novamente.',
+  path: ['confirmarSenha'],
+});
+
 // ── Schemas de Domínio Agrícola ──
 export const PropriedadeSchema = z.object({
   nome: z.string().trim().min(1, { error: 'O nome da propriedade é obrigatório' }).max(30, { error: 'O nome da propriedade deve ter no máximo 30 caracteres' }),
