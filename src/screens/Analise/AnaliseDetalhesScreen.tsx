@@ -22,6 +22,7 @@ interface AnaliseDetalhesScreenProps {
 }
 
 interface DataEntry {
+  idDado: number;
   date: string;
   val: number;
 }
@@ -38,7 +39,7 @@ export function AnaliseDetalhesScreen({ route }: AnaliseDetalhesScreenProps) {
     
     // Ordenação cronológica garantida
     const entries = filtered
-      .map(d => ({ date: d.dataLeitura, val: d.valor }))
+      .map(d => ({ idDado: d.idDado, date: d.dataLeitura, val: d.valor }))
       .sort((a, b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
       
     const tEntries = [...entries].reverse(); // Mais novos primeiro na tabela
@@ -96,7 +97,7 @@ export function AnaliseDetalhesScreen({ route }: AnaliseDetalhesScreenProps) {
 
       <FlatList
         data={tableEntries}
-        keyExtractor={(item) => item.date}
+        keyExtractor={(item) => item.idDado.toString()}
         contentContainerStyle={styles.content}
         initialNumToRender={15}
         maxToRenderPerBatch={10}
@@ -174,7 +175,7 @@ export function AnaliseDetalhesScreen({ route }: AnaliseDetalhesScreenProps) {
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.barsScrollContainer}
                         data={chartEntries}
-                        keyExtractor={(item) => item.date}
+                        keyExtractor={(item) => item.idDado.toString()}
                         initialNumToRender={10}
                         maxToRenderPerBatch={5}
                         renderItem={renderChartBar}
