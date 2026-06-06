@@ -65,12 +65,13 @@ api.interceptors.response.use(
 
 // Helper to extract content from HATEOAS paginated response and validate it via Zod
 const extractAndValidate = <T>(data: any, schema: z.ZodType<T>): T[] => {
-  let arr: T[] = [];
+  let arr: any[] = [];
   if (data && data.content && Array.isArray(data.content)) {
-    arr = data.content;
+    // Se o backend enviar EntityModel não flattado, cada item terá uma propriedade 'content'
+    arr = data.content.map((item: any) => (item && item.content) ? item.content : item);
   } else if (data && data._embedded) {
     const key = Object.keys(data._embedded)[0];
-    arr = data._embedded[key];
+    arr = data._embedded[key].map((item: any) => (item && item.content) ? item.content : item);
   } else if (Array.isArray(data)) {
     arr = data;
   }
@@ -183,7 +184,7 @@ export const apiService = {
     return res.data;
   },
   getReqApisByTalhao: async (idTalhao: number, options?: ApiRequestOptions) => {
-    const res = await api.get(`/req-api/talhao/${idTalhao}`, toRequestConfig(options));
+    const res = await api.get(`/req-api/talhao/${idTalhao}?size=100`, toRequestConfig(options));
     return extractAndValidate<ReqApi>(res.data, ReqApiResponseSchema);
   },
   deleteReqApi: async (id: number) => {
@@ -191,8 +192,8 @@ export const apiService = {
   },
 
   // ── Dados Temporais (Resultados das APIs unificados) ──
-  getDadosTemporais: async (idTalhao: number, options?: ApiRequestOptions) => {
-    const res = await api.get(`/dados-temporais/talhao/${idTalhao}`, toRequestConfig(options));
+  getDadosTemporaisByReqApi: async (idReqApi: number, size: number = 3000, options?: ApiRequestOptions) => {
+    const res = await api.get(`/dados-temporais/req-api/${idReqApi}?size=${size}`, toRequestConfig(options));
     return extractAndValidate<DadoTemporal>(res.data, DadoTemporalResponseSchema);
   },
 

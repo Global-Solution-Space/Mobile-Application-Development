@@ -118,14 +118,22 @@ export const AlertaAgricolaResponseSchema = z.object({
 export const ReqApiResponseSchema = z.object({
   id: z.number(),
   tipoParam: z.string(),
-  dataAnalise: z.string(),
+  dataAnalise: z.union([z.string(), z.array(z.number())]).transform(val => {
+    if (Array.isArray(val) && val.length >= 3) return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;
+    if (Array.isArray(val)) return "";
+    return val;
+  }),
   tipoApiNome: z.string(),
   idTipoApi: z.number()
 });
 
 export const DadoTemporalResponseSchema = z.object({
   idDado: z.number(),
-  dataLeitura: z.string(),
+  dataLeitura: z.union([z.string(), z.array(z.number())]).transform(val => {
+    if (Array.isArray(val) && val.length >= 3) return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;
+    if (Array.isArray(val)) return "";
+    return val;
+  }),
   valor: z.number(),
   idTalhao: z.number(),
   idReqApi: z.number(),

@@ -2,7 +2,7 @@
 // Terra Nova — Detalhes da Telemetria e Visualização Gráfica
 // ═══════════════════════════════════════════════════════════════
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList
 } from 'react-native';
@@ -29,8 +29,14 @@ interface DataEntry {
 
 export function AnaliseDetalhesScreen({ route }: AnaliseDetalhesScreenProps) {
   const { type, id, title, subtitle } = route.params || {};
-  const { dadosTemporais } = useAppStore();
+  const { dadosTemporais, fetchDadosTemporaisFull } = useAppStore();
   const config = TELEMETRY_CONFIGS[type];
+  
+  useEffect(() => {
+    if (id) {
+      fetchDadosTemporaisFull(id);
+    }
+  }, [id, fetchDadosTemporaisFull]);
   
   // Memoiza os cálculos pesados matemáticos extraindo dados da store viva (Zustand)
   const { dataEntries, tableEntries, chartEntries, chartMax } = useMemo(() => {

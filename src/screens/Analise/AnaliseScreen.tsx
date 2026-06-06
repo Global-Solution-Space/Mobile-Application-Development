@@ -4,7 +4,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity,
+  View, Text, StyleSheet,
   Alert, ActivityIndicator
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -15,7 +15,6 @@ import { TalhaoSelector } from '../../components/TalhaoSelector';
 import { TabSelector } from '../../components/TabSelector';
 import { AnalisePanel } from '../../components/AnalisePanel';
 import { useAppStore } from '../../store/useAppStore';
-import { useFocusEffect } from '@react-navigation/native';
 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';

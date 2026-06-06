@@ -65,6 +65,7 @@ export interface AppStore {
 
   requestApiAnalysis: (payload: ReqApiPayload) => Promise<boolean>;
   fetchDadosTemporaisEHistórico: (idTalhao: number, silent?: boolean) => Promise<void>;
+  fetchDadosTemporaisFull: (idReqApi: number) => Promise<void>;
   deleteReqApi: (id: number) => Promise<boolean>;
 
   updateAlerta: (id: number, data: Partial<AlertaAgricola>) => Promise<boolean>;
@@ -517,13 +518,18 @@ export const useAppStore = create<AppStore>()(
           if (!silent) set({ isLoading: true });
           try {
             const requestOptions = silent ? silentRequestOptions : undefined;
-            const [dados, reqs] = await Promise.all([
-              apiService.getDadosTemporais(idTalhao, requestOptions),
-              apiService.getReqApisByTalhao(idTalhao, requestOptions)
-            ]);
+            const reqs = await apiService.getReqApisByTalhao(idTalhao, requestOptions);
             const reqsWithTalhao = reqs.map(r => ({ ...r, idTalhao }));
+            
+            // Lazy Loading Arquitetural: Pega o top 5 de cada ReqApi para o preview
+            const previewsPromises = reqs.map(r => 
+              apiService.getDadosTemporaisByReqApi(r.id, 5, requestOptions)
+            );
+            const previewsResult = await Promise.all(previewsPromises);
+            const dadosPreview = previewsResult.flat();
+
             set(state => ({
-              dadosTemporais: [...state.dadosTemporais.filter(d => d.idTalhao !== idTalhao), ...dados],
+              dadosTemporais: [...state.dadosTemporais.filter(d => d.idTalhao !== idTalhao), ...dadosPreview],
               reqApis: [...state.reqApis.filter(r => r.idTalhao !== idTalhao), ...reqsWithTalhao]
             }));
           } catch (error: any) {
@@ -539,6 +545,20 @@ export const useAppStore = create<AppStore>()(
           await activeTelemetryPromises[idTalhao];
         } finally {
           delete activeTelemetryPromises[idTalhao];
+        }
+      },
+
+      fetchDadosTemporaisFull: async (idReqApi) => {
+        set({ isLoading: true });
+        try {
+          const dados = await apiService.getDadosTemporaisByReqApi(idReqApi, 3000);
+          set(state => ({
+            dadosTemporais: [...state.dadosTemporais.filter(d => d.idReqApi !== idReqApi), ...dados],
+          }));
+        } catch (error: any) {
+          console.warn("Fetch Dados Temporais Full error:", error.message);
+        } finally {
+          set({ isLoading: false });
         }
       },
 
