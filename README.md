@@ -61,8 +61,6 @@ MainStack (Navegação Stack Tipada)
 
 ## 🏗️ Arquitetura do Ecossistema Modelagem de Dados
 
-O backend foi modelado em um banco relacional seguindo as regras de negócio de agricultura de precisão.
-
 ![Diagrama de Banco de Dados (ERD)](./docs/diagrama-banco.png)
 
 ### Estrutura do Código Mobile
@@ -292,7 +290,7 @@ O aplicativo Mobile se comunica com o backend Java Spring Boot.
    ```bash
    mvn spring-boot:run
    ```
-3. A API estará rodando por padrão em `http://localhost:8080`.
+3. A API estará rodando por padrão em `http://[IP_LOCAL_JAVA]:8080`.
 
 ---
 
