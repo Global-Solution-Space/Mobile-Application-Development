@@ -24,6 +24,13 @@ const handleApiError = (error: any, defaultMsg: string) => {
   console.warn(`${defaultMsg}:`, error.message);
 };
 
+const upsertById = <T extends { id: number }>(items: T[], item: T) => {
+  const exists = items.some((current) => current.id === item.id);
+  return exists
+    ? items.map((current) => current.id === item.id ? item : current)
+    : [...items, item];
+};
+
 export interface AppStore {
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
@@ -127,25 +134,32 @@ export const useAppStore = create<AppStore>()(
 
             // Busca os recursos rápidos e essenciais do usuário
             const requestOptions = silent ? silentRequestOptions : undefined;
-            const [propriedades, talhoes, alertas] = await Promise.all([
+            const [propriedades, talhoes, alertas, produtorAtualizado] = await Promise.all([
               apiService.getPropriedadesDoProdutor(user.id, requestOptions),
               apiService.getTalhoesDoProdutor(user.id, requestOptions),
-              apiService.getAlertasDoProdutor(user.id, requestOptions)
+              apiService.getAlertasDoProdutor(user.id, requestOptions),
+              apiService.getProdutor(user.id, requestOptions).catch(() => null)
             ]);
 
-            set({ propriedades, talhoes, alertas });
+            set((state) => ({
+              propriedades,
+              talhoes,
+              alertas,
+              currentUser: produtorAtualizado ?? state.currentUser,
+              produtores: produtorAtualizado ? upsertById(state.produtores, produtorAtualizado) : state.produtores,
+            }));
 
-            // Lazy Loading (Cache Inteligente): Carrega tabelas ausentes em paralelo
+            // Lazy Loading (Cache Inteligente): mantem tabelas estaveis em cache e atualiza dados volateis.
             const state = get();
             const cacheDependencies = [
-              { key: 'tiposPlantacao' as const, fetcher: () => apiService.getTiposPlantacao(requestOptions) },
-              { key: 'localizacoes' as const, fetcher: () => apiService.getLocalizacoes(requestOptions) },
-              { key: 'telefones' as const, fetcher: () => apiService.getTelefones(requestOptions) }
+              { key: 'tiposPlantacao' as const, fetcher: () => apiService.getTiposPlantacao(requestOptions), cacheable: true },
+              { key: 'localizacoes' as const, fetcher: () => apiService.getLocalizacoes(requestOptions), cacheable: true },
+              { key: 'telefones' as const, fetcher: () => apiService.getTelefones(requestOptions), cacheable: false }
             ];
 
             await Promise.all(
               cacheDependencies
-                .filter(({ key }) => state[key].length === 0)
+                .filter(({ key, cacheable }) => !cacheable || state[key].length === 0)
                 .map(({ key, fetcher }) => fetcher().then(data => set({ [key]: data } as Partial<AppStore>)))
             );
             lastSuccessfulInitialSyncAt = Date.now();
@@ -256,10 +270,13 @@ export const useAppStore = create<AppStore>()(
             return false;
           }
 
+          const produtorServidor = await apiService.getProdutor(userId, silentRequestOptions).catch(() => null);
+          const produtorBase = produtorServidor ?? user ?? fallbackUser;
+
           const payload: Partial<Produtor> = {
-            nome: updates.nome ?? user?.nome ?? fallbackUser?.nome ?? '',
-            email: updates.email ?? user?.email ?? fallbackUser?.email ?? '',
-            senha: updates.senha ?? user?.senha ?? fallbackUser?.senha,
+            nome: updates.nome ?? produtorBase?.nome ?? '',
+            email: updates.email ?? produtorBase?.email ?? '',
+            senha: updates.senha ?? user?.senha ?? fallbackUser?.senha ?? produtorBase?.senha,
           };
 
           const updatedProdutor = await apiService.updateProdutor(userId, payload);
@@ -271,19 +288,32 @@ export const useAppStore = create<AppStore>()(
                idProdutor: userId,
              };
 
-             const telefone = get().telefones.find(t => t.idProdutor === userId);
-             if (telefone) {
-                const updatedTel = await apiService.updateTelefone(telefone.id, telefonePayload);
-                set(s => ({ telefones: s.telefones.map(t => t.id === telefone.id ? updatedTel : t) }));
-             } else if (telefonePayload.ddd && telefonePayload.numero) {
-                const newTel = await apiService.createTelefone(telefonePayload);
-                set(s => ({ telefones: [...s.telefones, newTel] }));
+             if (telefonePayload.ddd && telefonePayload.numero) {
+               const telefonesServidor = await apiService.getTelefones(silentRequestOptions).catch(() => get().telefones);
+               const telefone = telefonesServidor.find(t => t.idProdutor === userId);
+
+               if (telefone) {
+                  const updatedTel = await apiService.updateTelefone(telefone.id, {
+                    id: telefone.id,
+                    ...telefonePayload,
+                  });
+                  set({ telefones: upsertById(telefonesServidor, updatedTel) });
+               } else {
+                  const newTel = await apiService.createTelefone(telefonePayload);
+                  set({ telefones: [...telefonesServidor, newTel] });
+               }
              }
           }
 
+          const [produtorFinal, telefonesAtualizados] = await Promise.all([
+            apiService.getProdutor(userId, silentRequestOptions).catch(() => updatedProdutor),
+            apiService.getTelefones(silentRequestOptions).catch(() => get().telefones),
+          ]);
+
           set(s => ({ 
-            currentUser: updatedProdutor,
-            produtores: s.produtores.map(p => p.id === updatedProdutor.id ? updatedProdutor : p)
+            currentUser: produtorFinal,
+            produtores: upsertById(s.produtores, produtorFinal),
+            telefones: telefonesAtualizados,
           }));
           get().addLog('edicao', `Produtor atualizou seu perfil`);
           return true;

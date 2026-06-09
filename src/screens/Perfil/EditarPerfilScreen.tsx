@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -17,7 +17,7 @@ const perfilFormFields: PerfilFormField[] = ['nome', 'ddd', 'telefone', 'novoEma
 
 export function EditarPerfilScreen() {
   const navigation = useNavigation();
-  const { currentUser, telefones, updateProfile } = useAppStore();
+  const { currentUser, telefones, updateProfile, fetchInitialData, isLoading } = useAppStore();
 
   const phone = currentUser ? telefones.find((t) => t.idProdutor === currentUser.id) : null;
 
@@ -34,6 +34,18 @@ export function EditarPerfilScreen() {
 
   const emailValido = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   const senhasIguais = novaSenha.length > 0 && novaSenha === confirmarSenha;
+
+  // Busca os dados iniciais ao montar a tela
+  useEffect(() => {
+    fetchInitialData().catch(() => {});
+  }, [fetchInitialData]);
+
+  // Sincroniza os dados do servidor com os campos do formulário
+  useEffect(() => {
+    setNome(currentUser?.nome || '');
+    setDdd(phone?.ddd || '');
+    setTelefone(phone?.numero || '');
+  }, [currentUser?.nome, phone?.ddd, phone?.numero]);
 
   const clearFieldError = (field: PerfilFormField) => {
     setErrors((current) => {
@@ -265,6 +277,7 @@ export function EditarPerfilScreen() {
               title="Salvar alterações"
               icon="save"
               onPress={handleSave}
+              isLoading={isLoading}
             />
 
             <PrimaryButton
@@ -272,6 +285,7 @@ export function EditarPerfilScreen() {
               icon="arrow-left"
               variant="outline"
               onPress={() => navigation.goBack()}
+              disabled={isLoading}
             />
           </View>
         </ScrollView>

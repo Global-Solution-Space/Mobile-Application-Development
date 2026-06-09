@@ -87,11 +87,20 @@ const extractAndValidate = <T>(data: any, schema: z.ZodType<T>): T[] => {
   return result.data;
 };
 
+const extractOneAndValidate = <T>(data: any, schema: z.ZodType<T>): T => {
+  const item = data && data.content ? data.content : data;
+  return schema.parse(item);
+};
+
 export const apiService = {
   // ── Produtores ──
   getProdutores: async (options?: ApiRequestOptions) => {
     const res = await api.get('/produtores', toRequestConfig(options));
     return extractAndValidate<Produtor>(res.data, ProdutorResponseSchema);
+  },
+  getProdutor: async (id: number, options?: ApiRequestOptions) => {
+    const res = await api.get(`/produtores/${id}`, toRequestConfig(options));
+    return extractOneAndValidate<Produtor>(res.data, ProdutorResponseSchema);
   },
   createProdutor: async (data: Omit<Produtor, 'id' | '_links'> & { telefone?: { ddd: string; numero: string } }) => {
     const res = await api.post<Produtor>('/produtores', data);
@@ -107,11 +116,15 @@ export const apiService = {
     const res = await api.get('/telefones', toRequestConfig(options));
     return extractAndValidate<Telefone>(res.data, TelefoneResponseSchema);
   },
+  getTelefone: async (id: number, options?: ApiRequestOptions) => {
+    const res = await api.get(`/telefones/${id}`, toRequestConfig(options));
+    return extractOneAndValidate<Telefone>(res.data, TelefoneResponseSchema);
+  },
   createTelefone: async (data: Omit<Telefone, 'id' | '_links'>) => {
     const res = await api.post<Telefone>('/telefones', data);
     return res.data;
   },
-  updateTelefone: async (id: number, data: Partial<Telefone>) => {
+  updateTelefone: async (id: number, data: Omit<Telefone, '_links'>) => {
     const res = await api.put<Telefone>(`/telefones/${id}`, data);
     return res.data;
   },
