@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "sidonia",
-    "slug": "sidonia",
+    "name": "terranova",
+    "slug": "terranova",
     "version": "1.0.0",
     "android": {
-      "package": "com.anonymous.sidonia"
+      "package": "com.anonymous.terranova"
     }
   }
 }

@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.sidonia'
+    namespace 'com.anonymous.terranova'
     defaultConfig {
-        applicationId 'com.anonymous.sidonia'
+        applicationId 'com.anonymous.terranova'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
